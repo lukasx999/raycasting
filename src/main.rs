@@ -4,14 +4,16 @@ type Map = [[i32; MAP_WIDTH]; MAP_HEIGHT];
 
 const SCREEN_WIDTH:  i32 = 1600;
 const SCREEN_HEIGHT: i32 = 900;
-const MAP_WIDTH:     usize = 24;
+const MAP_WIDTH:     usize = 10;
 const MAP_HEIGHT:    usize = MAP_WIDTH;
-const CELL_SIZE:     i32 = 35;
+const CELL_SIZE:     i32 = 30;
 
-const OFFSET: Vector2 = Vector2::new(
-    (SCREEN_WIDTH  / 2 - CELL_SIZE * MAP_WIDTH  as i32 / 2) as f32,
-    (SCREEN_HEIGHT / 2 - CELL_SIZE * MAP_HEIGHT as i32 / 2) as f32
-);
+//const OFFSET: Vector2 = Vector2::new(
+//    (SCREEN_WIDTH  / 2 - CELL_SIZE * MAP_WIDTH  as i32 / 2) as f32,
+//    (SCREEN_HEIGHT / 2 - CELL_SIZE * MAP_HEIGHT as i32 / 2) as f32
+//);
+
+const OFFSET: Vector2 = Vector2::new(15.0, 15.0);
 
 
 fn connect_points(d: &mut RaylibDrawHandle, p1: Vector2, p2: Vector2, color: Color) {
@@ -45,7 +47,7 @@ struct Player {
 impl Player {
     pub fn new() -> Self {
         Self {
-            position:  Vector2::new(22.0, 12.0),
+            position:  Vector2::new(8.0, 5.0),
             direction: Vector2::new(-1.0, 0.0),
             plane:     Vector2::new(0.0, 0.66),
         }
@@ -138,20 +140,22 @@ fn cast_rays(d: &mut RaylibDrawHandle, player: &Player, map: &Map) {
 
         loop {
 
-            ray += ray_dir.scale_by(0.1);
+            let eps = 0.1;
+            ray += ray_dir.scale_by(eps);
 
-            //connect_points(d, ray, player.position, Color::DIMGRAY);
+            connect_points(d, ray, player.position, Color::DIMGRAY);
 
-            if ray.x as usize >= MAP_WIDTH || ray.y as usize >= MAP_HEIGHT {
+            if ray.x.abs() as usize >= MAP_WIDTH || ray.y.abs() as usize >= MAP_HEIGHT {
                 break;
             }
 
             let cell = map[ray.y as usize][ray.x as usize];
             let color = match cell {
-                1 => Some(Color::WHITE),
+                1 => Some(Color::BLUE),
                 2 => Some(Color::RED),
                 _ => None,
             };
+
 
             if let Some(color) = color {
                 let len = ray.length() / MAP_WIDTH as f32;
@@ -159,6 +163,8 @@ fn cast_rays(d: &mut RaylibDrawHandle, player: &Player, map: &Map) {
 
                 break;
             }
+
+
 
         }
 
@@ -174,30 +180,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let player = Player::new();
 
     let map: Map = [
-        [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
-        [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
-        [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
-        [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
-        [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
-        [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
-        [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
-        [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
-        [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
-        [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
-        [ 1, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
-        [ 1, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
-        [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
-        [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
-        [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
-        [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
-        [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
-        [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
-        [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
-        [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
-        [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
-        [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
-        [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
-        [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
+        [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
+        [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
+        [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
+        [ 0, 2, 0, 0, 0, 0, 0, 0, 0, 0 ],
+        [ 0, 1, 0, 0, 0, 0, 0, 0, 0, 0 ],
+        [ 0, 2, 0, 0, 0, 0, 0, 0, 0, 0 ],
+        [ 0, 0, 1, 0, 0, 0, 0, 0, 0, 0 ],
+        [ 0, 0, 0, 1, 0, 0, 0, 0, 0, 0 ],
+        [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
+        [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
     ];
 
     let (mut rl, thread) = raylib::init()
