@@ -1,19 +1,22 @@
 use raylib::prelude::*;
 
+
+
 type Map = [[i32; MAP_WIDTH]; MAP_HEIGHT];
 
-const SCREEN_WIDTH:  i32 = 1600;
-const SCREEN_HEIGHT: i32 = 900;
+const SCREEN_WIDTH:  i32 = 1920;
+const SCREEN_HEIGHT: i32 = 1080;
 const MAP_WIDTH:     usize = 10;
 const MAP_HEIGHT:    usize = MAP_WIDTH;
-const CELL_SIZE:     i32 = 30;
+const CELL_SIZE:     i32 = 100;
+const PLAYER_STEP:   f32 = 0.3;
 
-//const OFFSET: Vector2 = Vector2::new(
-//    (SCREEN_WIDTH  / 2 - CELL_SIZE * MAP_WIDTH  as i32 / 2) as f32,
-//    (SCREEN_HEIGHT / 2 - CELL_SIZE * MAP_HEIGHT as i32 / 2) as f32
-//);
+const OFFSET: Vector2 = Vector2::new(
+    (SCREEN_WIDTH  / 2 - CELL_SIZE * MAP_WIDTH  as i32 / 2) as f32,
+    (SCREEN_HEIGHT / 2 - CELL_SIZE * MAP_HEIGHT as i32 / 2) as f32
+);
 
-const OFFSET: Vector2 = Vector2::new(15.0, 15.0);
+//const OFFSET: Vector2 = Vector2::new(15.0, 15.0);
 
 
 fn connect_points(d: &mut RaylibDrawHandle, p1: Vector2, p2: Vector2, color: Color) {
@@ -36,6 +39,24 @@ fn point(d: &mut RaylibDrawHandle, center: Vector2, size: f32, color: Color) {
 
 
 
+fn get_cell_color(cell: i32) -> Option<Color> {
+    match cell {
+        1 => Some(Color::RED),
+        2 => Some(Color::BLUE),
+        0 => None,
+        _ => panic!("Unknown cell type"),
+    }
+}
+
+
+#[derive(Debug, Clone, Copy)]
+enum Direction {
+    North,
+    East,
+    South,
+    West,
+}
+
 
 #[derive(Debug, Clone, Copy)]
 struct Player {
@@ -47,30 +68,41 @@ struct Player {
 impl Player {
     pub fn new() -> Self {
         Self {
-            position:  Vector2::new(8.0, 5.0),
+            position:  Vector2::new(7.7, 5.6),
             direction: Vector2::new(-1.0, 0.0),
-            plane:     Vector2::new(0.0, 0.66),
+            plane:     Vector2::new(0.0, 2.0 / 3.0),
         }
     }
 
+    pub fn move_(&mut self, dir: Direction) {
+        use Direction as D;
+        match dir {
+            D::North => self.position.y -= PLAYER_STEP,
+            D::East  => self.position.x += PLAYER_STEP,
+            D::South => self.position.y += PLAYER_STEP,
+            D::West  => self.position.x -= PLAYER_STEP,
+        }
+    }
+
+    pub fn rotate(&mut self, counter_clockwise: bool) {
+        let step = if counter_clockwise { -PLAYER_STEP } else { PLAYER_STEP };
+        self.direction.rotate(step);
+    }
+
     pub fn render(&self, d: &mut RaylibDrawHandle) {
+        let color = Color::from_hex("3888c2").unwrap();
 
         let pos    = self.position;
         let dir    = self.position + self.direction;
         let plane1 = dir + self.plane;
         let plane2 = dir - self.plane;
 
-        connect_points(d, dir, plane1, Color::BLUE);  // left
-        connect_points(d, dir, plane2, Color::BLUE);  // right
-        connect_points(d, pos, plane2, Color::RED);   // left-diagonal
-        connect_points(d, pos, plane1, Color::RED);   // right-diagonal
-        connect_points(d, pos, dir,    Color::BLACK); // straight
+        connect_points(d, dir, plane1, color);  // left
+        connect_points(d, dir, plane2, color);  // right
+        connect_points(d, pos, plane2, color);  // left-diagonal
+        connect_points(d, pos, plane1, color);  // right-diagonal
 
-        let point_size = 5.0;
-        point(d, pos,    point_size, Color::GREEN);
-        point(d, dir,    point_size, Color::BLACK);
-        point(d, plane1, point_size, Color::BLUE);
-        point(d, plane2, point_size, Color::BLUE);
+        point(d, pos, 10.0, color);
 
     }
 
@@ -78,18 +110,11 @@ impl Player {
 
 
 fn render_map(d: &mut RaylibDrawHandle, map: &Map) -> Result<(), std::num::ParseIntError> {
-
-    let color_cell    = Color::from_hex("2d8fb5")?;
     let color_cell_bg = Color::from_hex("2e2e2e")?;
 
     for (y, row) in map.iter().enumerate() {
         for (x, cell) in row.iter().enumerate() {
-
-            let color = match *cell {
-                1 => color_cell,
-                2 => Color::RED,
-                _ => color_cell_bg,
-            };
+            let color = get_cell_color(*cell).unwrap_or(color_cell_bg);
 
             let rec = Rectangle::new(
                 x as f32 * CELL_SIZE as f32 + OFFSET.x,
@@ -125,8 +150,7 @@ fn render_stripe(
     );
 }
 
-
-fn cast_rays(d: &mut RaylibDrawHandle, player: &Player, map: &Map) {
+fn cast_rays_primitive(d: &mut RaylibDrawHandle, player: &Player, map: &Map) {
 
     for x in 0..=SCREEN_WIDTH {
 
@@ -135,12 +159,11 @@ fn cast_rays(d: &mut RaylibDrawHandle, player: &Player, map: &Map) {
 
         let ray_dir = player.direction + player.plane * camera_x;
 
-
         let mut ray = player.position;
 
         loop {
 
-            let eps = 0.1;
+            let eps = 0.01;
             ray += ray_dir.scale_by(eps);
 
             connect_points(d, ray, player.position, Color::DIMGRAY);
@@ -150,17 +173,12 @@ fn cast_rays(d: &mut RaylibDrawHandle, player: &Player, map: &Map) {
             }
 
             let cell = map[ray.y as usize][ray.x as usize];
-            let color = match cell {
-                1 => Some(Color::BLUE),
-                2 => Some(Color::RED),
-                _ => None,
-            };
-
+            let color = get_cell_color(cell);
 
             if let Some(color) = color {
                 let len = ray.length() / MAP_WIDTH as f32;
-                render_stripe(d, x, CELL_SIZE, len, color);
 
+                //render_stripe(d, x, CELL_SIZE, len, color);
                 break;
             }
 
@@ -175,19 +193,85 @@ fn cast_rays(d: &mut RaylibDrawHandle, player: &Player, map: &Map) {
 }
 
 
+
+
+fn cast_rays(d: &mut RaylibDrawHandle, player: &Player, map: &Map) {
+
+    //for x in 0..=SCREEN_WIDTH
+    for x in 0..1 {
+
+        /* -1.0 <-> 0.0 <-> 1.0 */
+        let camera_x = 2.0 * x as f32 / SCREEN_WIDTH as f32 - 1.0;
+        dbg!(&camera_x);
+
+        let ray_dir = player.direction + player.plane * camera_x;
+        dbg!(&ray_dir);
+
+        let color_ray = Color::PURPLE;
+
+        let mut ray = player.position;
+
+        loop {
+
+            let eps = 0.3;
+            ray += ray_dir.scale_by(eps);
+
+
+            point(d, ray, 5.0, color_ray);
+
+
+            if ray.x.abs() as usize >= MAP_WIDTH || ray.y.abs() as usize >= MAP_HEIGHT {
+                break;
+            }
+
+            let cell = map[ray.y as usize][ray.x as usize];
+            let color = get_cell_color(cell);
+
+            if let Some(color) = color {
+                let len = ray.length() / MAP_WIDTH as f32;
+                dbg!(&len);
+
+                //render_stripe(d, x, CELL_SIZE, len, color);
+                break;
+            }
+
+        }
+
+        connect_points(d, ray, player.position, color_ray);
+
+
+    }
+
+}
+
+
+fn handle_keypress(key: KeyboardKey, player: &mut Player) {
+    use KeyboardKey as K;
+    match key {
+        K::KEY_L | K::KEY_D | K::KEY_RIGHT => player.move_(Direction::East),
+        K::KEY_H | K::KEY_A | K::KEY_LEFT  => player.move_(Direction::West),
+        K::KEY_J | K::KEY_S | K::KEY_DOWN  => player.move_(Direction::South),
+        K::KEY_K | K::KEY_W | K::KEY_UP    => player.move_(Direction::North),
+        K::KEY_U => player.rotate(true),
+        K::KEY_I => player.rotate(false),
+        _ => {}
+    }
+}
+
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
 
-    let player = Player::new();
+    let mut player = Player::new();
 
     let map: Map = [
         [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
         [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
-        [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
-        [ 0, 2, 0, 0, 0, 0, 0, 0, 0, 0 ],
-        [ 0, 1, 0, 0, 0, 0, 0, 0, 0, 0 ],
-        [ 0, 2, 0, 0, 0, 0, 0, 0, 0, 0 ],
         [ 0, 0, 1, 0, 0, 0, 0, 0, 0, 0 ],
-        [ 0, 0, 0, 1, 0, 0, 0, 0, 0, 0 ],
+        [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
+        [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
+        [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
+        [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
+        [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
         [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
         [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
     ];
@@ -198,18 +282,34 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .build();
 
     rl.set_target_fps(60);
+    rl.set_trace_log(TraceLogLevel::LOG_ERROR);
+
+    let mut show_map = true;
 
     while !rl.window_should_close() {
+
+        let key   = rl.get_key_pressed();
         let mut d = rl.begin_drawing(&thread);
 
         d.clear_background(Color::from_hex("1f1f1f")?);
 
-        render_map(&mut d, &map)?;
-        player.render(&mut d);
+        if d.is_key_pressed(KeyboardKey::KEY_M) {
+            show_map = !show_map;
+        }
+
+        if let Some(key) = key {
+            handle_keypress(key, &mut player);
+        }
+
+        if show_map {
+            render_map(&mut d, &map)?;
+            player.render(&mut d);
+        }
+
         cast_rays(&mut d, &player, &map);
+
 
     }
 
     Ok(())
-
 }
