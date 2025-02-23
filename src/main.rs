@@ -68,9 +68,9 @@ struct Player {
 impl Player {
     pub fn new() -> Self {
         Self {
-            position:  Vector2::new(7.7, 5.6),
-            direction: Vector2::new(-1.0, 0.0),
-            plane:     Vector2::new(0.0, 2.0 / 3.0),
+            position:  Vector2::new(2.0, 5.0),
+            direction: Vector2::new(1.0, 0.0),
+            plane:     Vector2::new(0.0, 0.66),
         }
     }
 
@@ -87,6 +87,7 @@ impl Player {
     pub fn rotate(&mut self, counter_clockwise: bool) {
         let step = if counter_clockwise { -PLAYER_STEP } else { PLAYER_STEP };
         self.direction.rotate(step);
+        self.plane.rotate(step);
     }
 
     pub fn render(&self, d: &mut RaylibDrawHandle) {
@@ -197,47 +198,90 @@ fn cast_rays_primitive(d: &mut RaylibDrawHandle, player: &Player, map: &Map) {
 
 fn cast_rays(d: &mut RaylibDrawHandle, player: &Player, map: &Map) {
 
-    //for x in 0..=SCREEN_WIDTH
-    for x in 0..1 {
+    let color_ray = Color::PURPLE;
+
+    //for x in 0..=SCREEN_WIDTH {
+    let x = 0;
+    {
 
         /* -1.0 <-> 0.0 <-> 1.0 */
         let camera_x = 2.0 * x as f32 / SCREEN_WIDTH as f32 - 1.0;
-        dbg!(&camera_x);
-
         let ray_dir = player.direction + player.plane * camera_x;
-        dbg!(&ray_dir);
 
-        let color_ray = Color::PURPLE;
+        let delta_dist = Vector2::new(
+            (1.0 / ray_dir.x).abs(),
+            (1.0 / ray_dir.y).abs()
+        );
 
-        let mut ray = player.position;
+        // the current cell of the map
+        let (mut map_x, mut map_y) = (player.position.x as usize, player.position.y as usize);
 
+        // initial distance from player position to end of first cell
+        let mut side_dist = Vector2::zero();
+
+        let mut step = Vector2::zero();
+
+
+
+        if ray_dir.x < 0.0 {
+            step.x = -1.0;
+            side_dist.x = (player.position.x - map_x as f32) * delta_dist.x;
+        } else {
+            step.x = 1.0;
+            side_dist.x = (map_x as f32 + 1.0 - player.position.x) * delta_dist.x;
+        }
+
+        if ray_dir.y < 0.0 {
+            step.y = -1.0;
+            side_dist.y = (player.position.y - map_y as f32) * delta_dist.y;
+        } else {
+            step.y = 1.0;
+            side_dist.y = (map_y as f32 + 1.0 - player.position.y) * delta_dist.y;
+        }
+
+        let v = Vector2::new(
+            player.position.x + side_dist.x,
+            player.position.y - side_dist.x
+        );
+        connect_points(d, v, player.position, Color::RED);
+
+
+        /* DDA */
         loop {
 
-            let eps = 0.3;
-            ray += ray_dir.scale_by(eps);
-
-
-            point(d, ray, 5.0, color_ray);
-
-
-            if ray.x.abs() as usize >= MAP_WIDTH || ray.y.abs() as usize >= MAP_HEIGHT {
-                break;
+            if side_dist.x < side_dist.y {
+                side_dist.x += delta_dist.x;
+                map_x += step.x as usize;
+            } else {
+                side_dist.y += delta_dist.y;
+                map_y += step.y as usize;
             }
 
-            let cell = map[ray.y as usize][ray.x as usize];
+            let v = Vector2::new(
+                player.position.x + side_dist.x,
+                player.position.y - side_dist.x,
+            );
+            point(d, v, 5.0, Color::BLUE);
+
+
+            //if side_dist.x.abs() as usize >= MAP_WIDTH
+            //|| side_dist.y.abs() as usize >= MAP_HEIGHT
+            //{
+            //    break;
+            //}
+
+            let cell = map[map_y][map_x];
             let color = get_cell_color(cell);
 
             if let Some(color) = color {
-                let len = ray.length() / MAP_WIDTH as f32;
-                dbg!(&len);
-
+                //let len = ray.length() / MAP_WIDTH as f32;
+                //dbg!(&len);
                 //render_stripe(d, x, CELL_SIZE, len, color);
+
                 break;
             }
 
         }
-
-        connect_points(d, ray, player.position, color_ray);
 
 
     }
@@ -264,16 +308,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut player = Player::new();
 
     let map: Map = [
-        [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
-        [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
-        [ 0, 0, 1, 0, 0, 0, 0, 0, 0, 0 ],
-        [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
-        [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
-        [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
-        [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
-        [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
-        [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
-        [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
+        [ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 ],
+        [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
+        [ 1, 0, 1, 0, 0, 0, 0, 1, 0, 1 ],
+        [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
+        [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
+        [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
+        [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
+        [ 1, 0, 1, 0, 0, 0, 0, 1, 0, 1 ],
+        [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
+        [ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 ],
     ];
 
     let (mut rl, thread) = raylib::init()
