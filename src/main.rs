@@ -4,12 +4,12 @@ use raylib::prelude::*;
 
 type Map = [[i32; MAP_WIDTH]; MAP_HEIGHT];
 
-const SCREEN_WIDTH:  i32 = 1920;
-const SCREEN_HEIGHT: i32 = 1080;
+const SCREEN_WIDTH:  i32   = 1920;
+const SCREEN_HEIGHT: i32   = 1080;
 const MAP_WIDTH:     usize = 10;
 const MAP_HEIGHT:    usize = MAP_WIDTH;
-const CELL_SIZE:     i32 = 100;
-const PLAYER_STEP:   f32 = 0.3;
+const CELL_SIZE:     i32   = 100;
+const PLAYER_STEP:   f32   = 0.3;
 
 const OFFSET: Vector2 = Vector2::new(
     (SCREEN_WIDTH  / 2 - CELL_SIZE * MAP_WIDTH  as i32 / 2) as f32,
@@ -41,8 +41,8 @@ fn point(d: &mut RaylibDrawHandle, center: Vector2, size: f32, color: Color) {
 
 fn get_cell_color(cell: i32) -> Option<Color> {
     match cell {
-        1 => Some(Color::RED),
-        2 => Some(Color::BLUE),
+        1 => Some(Color::LIGHTBLUE),
+        2 => Some(Color::DARKBLUE),
         0 => None,
         _ => panic!("Unknown cell type"),
     }
@@ -151,58 +151,12 @@ fn render_stripe(
     );
 }
 
-fn cast_rays_primitive(d: &mut RaylibDrawHandle, player: &Player, map: &Map) {
-
-    for x in 0..=SCREEN_WIDTH {
-
-        /* -1.0 <-> 0.0 <-> 1.0 */
-        let camera_x = 2.0 * x as f32 / SCREEN_WIDTH as f32 - 1.0;
-
-        let ray_dir = player.direction + player.plane * camera_x;
-
-        let mut ray = player.position;
-
-        loop {
-
-            let eps = 0.01;
-            ray += ray_dir.scale_by(eps);
-
-            connect_points(d, ray, player.position, Color::DIMGRAY);
-
-            if ray.x.abs() as usize >= MAP_WIDTH || ray.y.abs() as usize >= MAP_HEIGHT {
-                break;
-            }
-
-            let cell = map[ray.y as usize][ray.x as usize];
-            let color = get_cell_color(cell);
-
-            if let Some(color) = color {
-                let len = ray.length() / MAP_WIDTH as f32;
-
-                //render_stripe(d, x, CELL_SIZE, len, color);
-                break;
-            }
-
-
-
-        }
-
-
-
-    }
-
-}
-
-
-
-
-fn cast_rays(d: &mut RaylibDrawHandle, player: &Player, map: &Map) {
+fn cast_rays_the_right_way(d: &mut RaylibDrawHandle, player: &Player, map: &Map) {
 
     let color_ray = Color::PURPLE;
 
     //for x in 0..=SCREEN_WIDTH {
-    let x = 0;
-    {
+    let x = 0; {
 
         /* -1.0 <-> 0.0 <-> 1.0 */
         let camera_x = 2.0 * x as f32 / SCREEN_WIDTH as f32 - 1.0;
@@ -239,11 +193,7 @@ fn cast_rays(d: &mut RaylibDrawHandle, player: &Player, map: &Map) {
             side_dist.y = (map_y as f32 + 1.0 - player.position.y) * delta_dist.y;
         }
 
-        let v = Vector2::new(
-            player.position.x + side_dist.x,
-            player.position.y - side_dist.x
-        );
-        connect_points(d, v, player.position, Color::RED);
+
 
 
         /* DDA */
@@ -257,13 +207,6 @@ fn cast_rays(d: &mut RaylibDrawHandle, player: &Player, map: &Map) {
                 map_y += step.y as usize;
             }
 
-            let v = Vector2::new(
-                player.position.x + side_dist.x,
-                player.position.y - side_dist.x,
-            );
-            point(d, v, 5.0, Color::BLUE);
-
-
             //if side_dist.x.abs() as usize >= MAP_WIDTH
             //|| side_dist.y.abs() as usize >= MAP_HEIGHT
             //{
@@ -274,10 +217,7 @@ fn cast_rays(d: &mut RaylibDrawHandle, player: &Player, map: &Map) {
             let color = get_cell_color(cell);
 
             if let Some(color) = color {
-                //let len = ray.length() / MAP_WIDTH as f32;
-                //dbg!(&len);
                 //render_stripe(d, x, CELL_SIZE, len, color);
-
                 break;
             }
 
@@ -287,6 +227,50 @@ fn cast_rays(d: &mut RaylibDrawHandle, player: &Player, map: &Map) {
     }
 
 }
+
+fn cast_rays(d: &mut RaylibDrawHandle, player: &Player, map: &Map) {
+
+    let color_ray = Color::PURPLE;
+
+    //for x in 0..=SCREEN_WIDTH {
+    let x = 0; {
+
+        /* -1.0 <-> 0.0 <-> 1.0 */
+        let camera_x = 2.0 * x as f32 / SCREEN_WIDTH as f32 - 1.0;
+        let ray_dir  = player.direction + player.plane * camera_x;
+        let pos      = player.position;
+
+        let delta = Vector2::new(
+            (1.0 / ray_dir.x).abs(),
+            (1.0 / ray_dir.y).abs()
+        );
+
+        connect_points(d, pos + ray_dir, pos, Color::RED);
+
+        /* DDA */
+        loop {
+
+
+            break;
+
+            /*
+            let cell = map[map_y][map_x];
+            let color = get_cell_color(cell);
+
+            if let Some(color) = color {
+                //render_stripe(d, x, CELL_SIZE, len, color);
+                break;
+            }
+            */
+
+        }
+
+
+    }
+
+}
+
+
 
 
 fn handle_keypress(key: KeyboardKey, player: &mut Player) {
@@ -310,12 +294,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let map: Map = [
         [ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 ],
         [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
-        [ 1, 0, 1, 0, 0, 0, 0, 1, 0, 1 ],
+        [ 1, 0, 2, 0, 0, 0, 0, 2, 0, 1 ],
         [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
         [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
         [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
         [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
-        [ 1, 0, 1, 0, 0, 0, 0, 1, 0, 1 ],
+        [ 1, 0, 2, 0, 0, 0, 0, 2, 0, 1 ],
         [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
         [ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 ],
     ];
@@ -351,7 +335,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
 
         cast_rays(&mut d, &player, &map);
-
 
     }
 
