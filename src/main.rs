@@ -9,7 +9,7 @@ const SCREEN_HEIGHT: i32   = 1080;
 const MAP_WIDTH:     usize = 10;
 const MAP_HEIGHT:    usize = MAP_WIDTH;
 const CELL_SIZE:     i32   = 100;
-const PLAYER_STEP:   f32   = 0.1;
+const PLAYER_STEP:   f32   = 0.3;
 
 const OFFSET: Vector2 = Vector2::new(
     (SCREEN_WIDTH  / 2 - CELL_SIZE * MAP_WIDTH  as i32 / 2) as f32,
@@ -88,7 +88,7 @@ impl Player {
     pub fn rotate(&mut self, counter_clockwise: bool, using_mouse: bool) {
         let mut step = if counter_clockwise { -PLAYER_STEP } else { PLAYER_STEP };
         if using_mouse {
-            step /= 10.0;
+            step /= 3.0;
         }
         self.direction.rotate(step);
         self.plane.rotate(step);
@@ -117,7 +117,7 @@ impl Player {
         connect_points(draw, pos, plane2, color);  // left-diagonal
         connect_points(draw, pos, plane1, color);  // right-diagonal
 
-        point(draw, pos, 5.0, color);
+        point(draw, pos, 10.0, color);
 
     }
 
@@ -168,8 +168,6 @@ fn render_stripe(
 
 fn cast_rays(draw: &mut RaylibDrawHandle, player: &Player, map: &Map) {
 
-    let color_ray = Color::PURPLE;
-
     //for x in 0..=SCREEN_WIDTH {
     let x = 0; { // only 1 ray for testing
 
@@ -189,7 +187,9 @@ fn cast_rays(draw: &mut RaylibDrawHandle, player: &Player, map: &Map) {
 
         // the current cell of the map
         // floating point value gets removed from player position
-        let (mut map_x, mut map_y) = (pos.x as usize, pos.y as usize);
+        // has to be isize, because we later cast step to usize,
+        // and things will be messed up if step is negative
+        let (mut map_x, mut map_y) = (pos.x as isize, pos.y as isize);
 
         // initial distance from player position to end of first cell
         // will get incremented by delat_dist
@@ -201,6 +201,8 @@ fn cast_rays(draw: &mut RaylibDrawHandle, player: &Player, map: &Map) {
         // IMPORTANT: the x and y components of side_dist and delta_dist
         // are both euclidean distances, not x/y coordinates
 
+        // TODO: why does multiplying perpendicular distance by delta_dist
+        // yield euclidean distance???
         if ray_dir.x < 0.0 {
             step.x = -1.0;
             side_dist.x = (pos.x - map_x as f32) * delta_dist.x;
@@ -223,19 +225,33 @@ fn cast_rays(draw: &mut RaylibDrawHandle, player: &Player, map: &Map) {
         point(draw, pos + ray_dir * side_dist.x, point_size, Color::RED);
         point(draw, pos + ray_dir * side_dist.y, point_size, Color::GREEN);
 
+
         /* DDA */
         loop {
 
+            draw.draw_rectangle(
+                map_x as i32 * CELL_SIZE + OFFSET.x as i32,
+                map_y as i32 * CELL_SIZE + OFFSET.y as i32,
+                CELL_SIZE,
+                CELL_SIZE,
+                Color::GRAY.alpha(0.15)
+            );
+
+
+
+            // TODO: points are drawn before break
+
             if side_dist.x < side_dist.y {
                 side_dist.x += delta_dist.x;
-                map_x += step.x as usize;
+                map_x += step.x as isize;
                 point(draw, pos + ray_dir * side_dist.x, point_size, Color::RED);
 
             } else {
                 side_dist.y += delta_dist.y;
-                map_y += step.y as usize;
+                map_y += step.y as isize;
                 point(draw, pos + ray_dir * side_dist.y, point_size, Color::GREEN);
             }
+
 
 
             //if side_dist.x.abs() as usize >= MAP_WIDTH
@@ -244,8 +260,9 @@ fn cast_rays(draw: &mut RaylibDrawHandle, player: &Player, map: &Map) {
             //    break;
             //}
 
-            let cell = map[map_y][map_x];
+            let cell = map[map_y as usize][map_x as usize];
             let color = get_cell_color(cell);
+
 
             if let Some(color) = color {
                 //render_stripe(d, x, CELL_SIZE, len, color);
@@ -323,7 +340,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         draw.clear_background(Color::from_hex("1f1f1f")?);
 
-        /*
         if mouse.x < 0.0 {
             player.rotate(true, true);
         }
@@ -331,7 +347,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         if mouse.x > 0.0 {
             player.rotate(false, true);
         }
-        */
 
         let ctrl = draw.is_key_down(KeyboardKey::KEY_LEFT_CONTROL);
 
