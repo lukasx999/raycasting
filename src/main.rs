@@ -19,7 +19,7 @@ const OFFSET: Vector2 = Vector2::new(
 //const OFFSET: Vector2 = Vector2::new(15.0, 15.0);
 
 
-fn connect_points(d: &mut RaylibDrawHandle, p1: Vector2, p2: Vector2, color: Color) {
+fn map_connect_points(d: &mut RaylibDrawHandle, p1: Vector2, p2: Vector2, color: Color) {
     let size = 5.0;
     d.draw_line_ex(
         p1 * CELL_SIZE as f32 + OFFSET,
@@ -29,7 +29,7 @@ fn connect_points(d: &mut RaylibDrawHandle, p1: Vector2, p2: Vector2, color: Col
     );
 }
 
-fn point(d: &mut RaylibDrawHandle, center: Vector2, size: f32, color: Color) {
+fn map_point(d: &mut RaylibDrawHandle, center: Vector2, size: f32, color: Color) {
     d.draw_circle_v(
         center * CELL_SIZE as f32 + OFFSET,
         size,
@@ -37,6 +37,13 @@ fn point(d: &mut RaylibDrawHandle, center: Vector2, size: f32, color: Color) {
     );
 }
 
+fn map_square(d: &mut RaylibDrawHandle, pos: Vector2, color: Color) {
+    d.draw_rectangle_v(
+        pos * CELL_SIZE as f32 + OFFSET,
+        Vector2::new(CELL_SIZE as f32, CELL_SIZE as f32),
+        color
+    );
+}
 
 
 fn get_cell_color(cell: i32) -> Option<Color> {
@@ -112,12 +119,12 @@ impl Player {
         let plane1 = dir + self.plane;
         let plane2 = dir - self.plane;
 
-        connect_points(draw, dir, plane1, color);  // left
-        connect_points(draw, dir, plane2, color);  // right
-        connect_points(draw, pos, plane2, color);  // left-diagonal
-        connect_points(draw, pos, plane1, color);  // right-diagonal
+        map_connect_points(draw, dir, plane1, color);  // left
+        map_connect_points(draw, dir, plane2, color);  // right
+        map_connect_points(draw, pos, plane2, color);  // left-diagonal
+        map_connect_points(draw, pos, plane1, color);  // right-diagonal
 
-        point(draw, pos, 10.0, color);
+        map_point(draw, pos, 10.0, color);
 
     }
 
@@ -173,6 +180,7 @@ fn cast_rays(draw: &mut RaylibDrawHandle, player: &Player, map: &Map) {
 
         /* -1.0 <-> 0.0 <-> 1.0 */
         let camera_x = 2.0 * x as f32 / SCREEN_WIDTH as f32 - 1.0;
+
         let ray_dir = player.direction + player.plane * camera_x;
         let pos = player.position;
 
@@ -222,50 +230,39 @@ fn cast_rays(draw: &mut RaylibDrawHandle, player: &Player, map: &Map) {
         let point_size = 10.0;
 
         // initial side dist
-        point(draw, pos + ray_dir * side_dist.x, point_size, Color::RED);
-        point(draw, pos + ray_dir * side_dist.y, point_size, Color::GREEN);
+        map_point(draw, pos + ray_dir * side_dist.x, point_size, Color::RED);
+        map_point(draw, pos + ray_dir * side_dist.y, point_size, Color::GREEN);
 
 
         /* DDA */
         loop {
 
-            draw.draw_rectangle(
-                map_x as i32 * CELL_SIZE + OFFSET.x as i32,
-                map_y as i32 * CELL_SIZE + OFFSET.y as i32,
-                CELL_SIZE,
-                CELL_SIZE,
-                Color::GRAY.alpha(0.15)
-            );
-
-
-
             // TODO: points are drawn before break
+
+            map_square(draw, Vector2::new(map_x as f32, map_y as f32), Color::GRAY.alpha(0.15));
 
             if side_dist.x < side_dist.y {
                 side_dist.x += delta_dist.x;
                 map_x += step.x as isize;
-                point(draw, pos + ray_dir * side_dist.x, point_size, Color::RED);
+                map_point(draw, pos + ray_dir * side_dist.x, point_size, Color::RED);
 
             } else {
                 side_dist.y += delta_dist.y;
                 map_y += step.y as isize;
-                point(draw, pos + ray_dir * side_dist.y, point_size, Color::GREEN);
+                map_point(draw, pos + ray_dir * side_dist.y, point_size, Color::GREEN);
             }
 
-
-
-            //if side_dist.x.abs() as usize >= MAP_WIDTH
-            //|| side_dist.y.abs() as usize >= MAP_HEIGHT
-            //{
-            //    break;
-            //}
+            // out of bounds check (no wall)
+            if map_x as usize >= MAP_WIDTH || map_y as usize >= MAP_HEIGHT {
+                break;
+            }
 
             let cell = map[map_y as usize][map_x as usize];
             let color = get_cell_color(cell);
 
-
             if let Some(color) = color {
                 //render_stripe(d, x, CELL_SIZE, len, color);
+                map_square(draw, Vector2::new(map_x as f32, map_y as f32), Color::PURPLE);
                 break;
             }
 
@@ -297,14 +294,14 @@ fn construct_map() -> Map {
     [
         [ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 ],
         [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
-        [ 1, 0, 2, 0, 0, 0, 0, 2, 0, 1 ],
-        [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
-        [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
-        [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
-        [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
-        [ 1, 0, 2, 0, 0, 0, 0, 2, 0, 1 ],
-        [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
-        [ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 ],
+        [ 1, 0, 0, 0, 0, 1, 2, 2, 0, 1 ],
+        [ 1, 0, 0, 0, 0, 0, 0, 1, 0, 0 ],
+        [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
+        [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
+        [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
+        [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
+        [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
+        [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
     ]
 }
 
@@ -340,13 +337,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         draw.clear_background(Color::from_hex("1f1f1f")?);
 
-        if mouse.x < 0.0 {
-            player.rotate(true, true);
-        }
-
-        if mouse.x > 0.0 {
-            player.rotate(false, true);
-        }
+        //if mouse.x < 0.0 {
+        //    player.rotate(true, true);
+        //}
+        //
+        //if mouse.x > 0.0 {
+        //    player.rotate(false, true);
+        //}
 
         let ctrl = draw.is_key_down(KeyboardKey::KEY_LEFT_CONTROL);
 
