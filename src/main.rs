@@ -6,11 +6,10 @@ use raycasting::{Player, Direction, Map, cast_rays};
 const SCREEN_WIDTH:  i32 = 1920;
 const SCREEN_HEIGHT: i32 = 1080;
 
-
-
 trait UiComponent {
     fn render(&self, draw: &mut RaylibDrawHandle);
 }
+
 
 
 
@@ -47,7 +46,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let map = Map::new();
     let mut player = Player::new();
-    let mut show_map = true;
+    let mut show_minimap = true;
 
     let (mut rl, thread) = init_raylib();
 
@@ -87,16 +86,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
 
         if let Some(key) = key {
-            handle_keypress(key, &mut player, &mut show_map);
+            handle_keypress(key, &mut player, &mut show_minimap);
         }
 
         cast_rays(&mut draw, &player, &map);
 
-        if show_map {
+        if show_minimap {
             map.render(&mut draw);
             player.render(&mut draw);
         }
-
 
     }
 

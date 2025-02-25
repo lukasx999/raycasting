@@ -31,12 +31,12 @@ impl Map {
             [ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 ],
             [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
             [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
-            [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
+            [ 1, 0, 0, 0, 0, 0, 0, 3, 0, 1 ],
             [ 1, 0, 0, 0, 0, 0, 0, 2, 0, 1 ],
             [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
             [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
-            [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
-            [ 1, 0, 0, 0, 0, 2, 0, 0, 0, 1 ],
+            [ 1, 0, 0, 0, 0, 0, 0, 4, 0, 1 ],
+            [ 1, 0, 0, 3, 0, 2, 0, 4, 0, 1 ],
             [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
         ])
     }
@@ -48,21 +48,19 @@ impl Map {
     pub fn render(&self, draw: &mut RaylibDrawHandle) {
         let color_cell_bg = Color::from_hex("2e2e2e").unwrap();
 
-
-
         for (y, row) in self.0.iter().enumerate() {
             for (x, cell) in row.iter().enumerate() {
                 let color = get_cell_color(*cell).unwrap_or(color_cell_bg);
 
-                let rec = Rectangle::new(
+                let rec_cell = Rectangle::new(
                     x as f32 * CELL_SIZE as f32 + OFFSET.x,
                     y as f32 * CELL_SIZE as f32 + OFFSET.y,
                     CELL_SIZE as f32,
                     CELL_SIZE as f32,
                 );
 
-                draw.draw_rectangle_rec(rec, color);
-                draw.draw_rectangle_lines_ex(rec, 1.0, color_cell_bg.brightness(0.03));
+                draw.draw_rectangle_rec(rec_cell, color);
+                draw.draw_rectangle_lines_ex(rec_cell, 1.0, color_cell_bg.brightness(0.03));
 
             }
         }
@@ -112,6 +110,8 @@ fn get_cell_color(cell: i32) -> Option<Color> {
     match cell {
         1 => Some(Color::from_hex("585a5c").unwrap()),
         2 => Some(Color::from_hex("164c82").unwrap()),
+        3 => Some(Color::from_hex("fcba03").unwrap()),
+        4 => Some(Color::from_hex("b82d23").unwrap()),
         0 => None,
         _ => panic!("Unknown cell type"),
     }
@@ -147,13 +147,25 @@ impl Player {
         }
     }
 
+    //pub fn move_(&mut self, dir: Direction) {
+    //    use Direction as D;
+    //    match dir {
+    //        D::North => self.position.y -= PLAYER_STEP,
+    //        D::East  => self.position.x += PLAYER_STEP,
+    //        D::South => self.position.y += PLAYER_STEP,
+    //        D::West  => self.position.x -= PLAYER_STEP,
+    //    }
+    //}
+
     pub fn move_(&mut self, dir: Direction) {
+        use std::f32::consts::PI;
+
         use Direction as D;
         match dir {
-            D::North => self.position.y -= PLAYER_STEP,
-            D::East  => self.position.x += PLAYER_STEP,
-            D::South => self.position.y += PLAYER_STEP,
-            D::West  => self.position.x -= PLAYER_STEP,
+            D::North => self.position += self.direction * PLAYER_STEP,
+            D::South => self.position -= self.direction * PLAYER_STEP,
+            D::East  => self.position += self.direction.rotated(PI / 2.0) * PLAYER_STEP,
+            D::West  => self.position -= self.direction.rotated(PI / 2.0) * PLAYER_STEP,
         }
     }
 
@@ -212,8 +224,8 @@ pub fn cast_rays(draw: &mut RaylibDrawHandle, player: &Player, map: &Map) {
         // => slope = ray_dir.y / ray_dir.x
         // => sqrt(1 + slope.pow(2))
         let delta_dist = Vector2::new(
-            (1.0 / ray_dir.x).abs(),
-            (1.0 / ray_dir.y).abs()
+            ray_dir.x.recip().abs(),
+            ray_dir.y.recip().abs(),
         );
 
         // the current cell of the map
@@ -234,7 +246,7 @@ pub fn cast_rays(draw: &mut RaylibDrawHandle, player: &Player, map: &Map) {
 
 
         // TODO: why does multiplying perpendicular distance by delta_dist
-        // yield euclidean distance???
+        // yield euclidean distance?
         if ray_dir.x < 0.0 {
             step.x = -1.0;
             side_dist.x = (pos.x - map_x as f32) * delta_dist.x;
@@ -255,8 +267,6 @@ pub fn cast_rays(draw: &mut RaylibDrawHandle, player: &Player, map: &Map) {
 
         // DDA
         loop {
-
-            let color_ray = Color::GRAY;
 
             if side_dist.x < side_dist.y {
                 //map_connect_points(draw, pos, pos + ray_dir * side_dist.x, color_ray);
@@ -282,6 +292,11 @@ pub fn cast_rays(draw: &mut RaylibDrawHandle, player: &Player, map: &Map) {
             if let Some(mut color) = color {
                 //map_square(draw, Vector2::new(map_x as f32, map_y as f32), Color::PURPLE);
 
+                // make x-side slighty darker
+                if side == 0 {
+                    color = color.brightness(0.1);
+                }
+
                 // substract delta_dist once, because the dda algorithm went one cell too far
                 let perp_wall_dist = if side == 0 {
                     side_dist.x - delta_dist.x
@@ -289,20 +304,13 @@ pub fn cast_rays(draw: &mut RaylibDrawHandle, player: &Player, map: &Map) {
                     side_dist.y - delta_dist.y
                 };
 
-
                 let line_height = (SCREEN_HEIGHT as f32 / perp_wall_dist) as i32;
 
-                let mut start = -line_height / 2 + SCREEN_HEIGHT / 2;
-                if start < 0 {
-                    start = 0;
-                }
-
-                // give x and y sides different brightness
-                if side == 1 {
-                    color = color.brightness(0.1);
-                }
+                let start = SCREEN_HEIGHT / 2 - line_height / 2;
+                let start = start.clamp(0, std::i32::MAX);
 
                 draw.draw_rectangle(x, start, CELL_SIZE, line_height, color);
+
                 break;
             }
 
