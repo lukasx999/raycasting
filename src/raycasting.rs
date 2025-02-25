@@ -2,6 +2,7 @@ use raylib::prelude::*;
 
 use crate::{SCREEN_WIDTH, SCREEN_HEIGHT};
 
+// https://lodev.org/cgtutor/raycasting.html
 
 
 
@@ -35,7 +36,7 @@ impl Map {
             [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
             [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
             [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
-            [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
+            [ 1, 0, 0, 0, 0, 2, 0, 0, 0, 1 ],
             [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
         ])
     }
@@ -46,6 +47,8 @@ impl Map {
 
     pub fn render(&self, draw: &mut RaylibDrawHandle) {
         let color_cell_bg = Color::from_hex("2e2e2e").unwrap();
+
+
 
         for (y, row) in self.0.iter().enumerate() {
             for (x, cell) in row.iter().enumerate() {
@@ -63,6 +66,15 @@ impl Map {
 
             }
         }
+
+        let map_border = Rectangle::new(
+            OFFSET.x,
+            OFFSET.y,
+            MAP_WIDTH as f32 * CELL_SIZE as f32,
+            MAP_HEIGHT as f32 * CELL_SIZE as f32
+        );
+
+        draw.draw_rectangle_lines_ex(map_border, 3.0, Color::WHITESMOKE);
 
     }
 }
@@ -183,29 +195,10 @@ impl Player {
 
 }
 
-
-
-fn render_stripe(
-    draw:  &mut RaylibDrawHandle,
-    x:     i32,
-    width: i32,
-    mut size:  f32,
-    color: Color
-) {
-    size = 1.0 - size;
-    draw.draw_rectangle(
-        x,
-        ((SCREEN_HEIGHT as f32 * size) * (1.0 - size)) as i32,
-        width,
-        (SCREEN_HEIGHT as f32 * size) as i32,
-        color
-    );
-}
-
 pub fn cast_rays(draw: &mut RaylibDrawHandle, player: &Player, map: &Map) {
 
-    for x in 0..=SCREEN_WIDTH {
-    //for x in (0..=SCREEN_WIDTH).step_by(100) {
+    //for x in 0..=SCREEN_WIDTH {
+    for x in (0..=SCREEN_WIDTH).step_by(CELL_SIZE as usize) {
     //let x = 0; { // only 1 ray for testing
 
         /* -1.0 <-> 0.0 <-> 1.0 */
@@ -289,28 +282,27 @@ pub fn cast_rays(draw: &mut RaylibDrawHandle, player: &Player, map: &Map) {
             if let Some(mut color) = color {
                 //map_square(draw, Vector2::new(map_x as f32, map_y as f32), Color::PURPLE);
 
-                // substract delta_dist once, because the dda algorithm
-                // went one cell too far
+                // substract delta_dist once, because the dda algorithm went one cell too far
                 let perp_wall_dist = if side == 0 {
                     side_dist.x - delta_dist.x
                 } else {
                     side_dist.y - delta_dist.y
                 };
 
-                let line  = (SCREEN_HEIGHT as f32 / perp_wall_dist) as i32;
-                let start = -line / 2 + SCREEN_HEIGHT / 2;
-                let end   =  line / 2 + SCREEN_HEIGHT / 2;
 
-                let len = perp_wall_dist / MAP_HEIGHT as f32;
+                let line_height = (SCREEN_HEIGHT as f32 / perp_wall_dist) as i32;
+
+                let mut start = -line_height / 2 + SCREEN_HEIGHT / 2;
+                if start < 0 {
+                    start = 0;
+                }
 
                 // give x and y sides different brightness
                 if side == 1 {
                     color = color.brightness(0.1);
                 }
 
-                //draw.draw_rectangle(x, start, CELL_SIZE, end, color);
-
-                render_stripe(draw, x, CELL_SIZE, len, color);
+                draw.draw_rectangle(x, start, CELL_SIZE, line_height, color);
                 break;
             }
 
