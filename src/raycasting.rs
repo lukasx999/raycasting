@@ -25,6 +25,8 @@ const MAP_HEIGHT: usize = MAP_WIDTH;
 
 pub struct Map([[CellType; MAP_WIDTH]; MAP_HEIGHT]);
 
+// TODO: load map from file
+
 impl Map {
     pub fn new() -> Self {
         Self([
@@ -35,7 +37,7 @@ impl Map {
             [ 1, 0, 0, 0, 0, 0, 0, 2, 0, 1 ],
             [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
             [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
-            [ 1, 0, 0, 0, 0, 0, 0, 4, 0, 1 ],
+            [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
             [ 1, 0, 0, 3, 0, 2, 0, 4, 0, 1 ],
             [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
         ])
@@ -147,16 +149,6 @@ impl Player {
         }
     }
 
-    //pub fn move_(&mut self, dir: Direction) {
-    //    use Direction as D;
-    //    match dir {
-    //        D::North => self.position.y -= PLAYER_STEP,
-    //        D::East  => self.position.x += PLAYER_STEP,
-    //        D::South => self.position.y += PLAYER_STEP,
-    //        D::West  => self.position.x -= PLAYER_STEP,
-    //    }
-    //}
-
     pub fn move_(&mut self, dir: Direction) {
         use std::f32::consts::PI;
 
@@ -206,6 +198,8 @@ impl Player {
     }
 
 }
+
+// TODO: refactor
 
 pub fn cast_rays(draw: &mut RaylibDrawHandle, player: &Player, map: &Map) {
 
@@ -281,7 +275,7 @@ pub fn cast_rays(draw: &mut RaylibDrawHandle, player: &Player, map: &Map) {
                 side = 1;
             }
 
-            // out of bounds check (no wall)
+            // out of bounds check (no wall in sight)
             if map_x as usize >= MAP_WIDTH || map_y as usize >= MAP_HEIGHT {
                 break;
             }
