@@ -205,24 +205,17 @@ impl Player {
 
 }
 
-// TODO: refactor
-
 pub fn cast_rays(draw: &mut RaylibDrawHandle, player: &Player, map: &Map) {
 
-    //for x in 0..=SCREEN_WIDTH {
     for x in (0..=SCREEN_WIDTH).step_by(RESOLUTION as usize) {
-    //let x = 0; { // only 1 ray for testing
+        let pos = player.position;
 
         /* -1.0 <-> 0.0 <-> 1.0 */
         let camera_x = 2.0 * x as f32 / SCREEN_WIDTH as f32 - 1.0;
 
         let ray_dir = player.direction + player.plane * camera_x;
-        let pos = player.position;
 
         // the length of a step needed to get to the x/y edge of the next cell
-        // the formula is a simplified version of the pythagorean theorem
-        // => slope = ray_dir.y / ray_dir.x
-        // => sqrt(1 + slope.pow(2))
         let delta_dist = Vector2::new(
             ray_dir.x.recip().abs(),
             ray_dir.y.recip().abs(),
@@ -232,16 +225,13 @@ pub fn cast_rays(draw: &mut RaylibDrawHandle, player: &Player, map: &Map) {
         // floating point value gets removed from player position
         // has to be isize, because we later cast step to usize,
         // and things will be messed up if step is negative
-        let (mut map_x, mut map_y) = (pos.x as isize, pos.y as isize);
-
-        // IMPORTANT: the x and y components of side_dist and delta_dist
-        // are both euclidean distances, not x/y coordinates
+        let (mut mapx, mut mapy) = (pos.x as isize, pos.y as isize);
 
         // step for incrementing map_x/y
         let mut step = Vector2::zero();
 
         // initial distance from player position to end of first cell
-        // will get incremented by delat_dist
+        // will get incremented by delta_dist
         let mut side_dist = Vector2::zero();
 
 
@@ -249,18 +239,18 @@ pub fn cast_rays(draw: &mut RaylibDrawHandle, player: &Player, map: &Map) {
         // yield euclidean distance?
         if ray_dir.x < 0.0 {
             step.x = -1.0;
-            side_dist.x = (pos.x - map_x as f32) * delta_dist.x;
+            side_dist.x = (pos.x - mapx as f32) * delta_dist.x;
         } else {
             step.x = 1.0;
-            side_dist.x = (map_x as f32 + 1.0 - pos.x) * delta_dist.x;
+            side_dist.x = (mapx as f32 + 1.0 - pos.x) * delta_dist.x;
         }
 
         if ray_dir.y < 0.0 {
             step.y = -1.0;
-            side_dist.y = (pos.y - map_y as f32) * delta_dist.y;
+            side_dist.y = (pos.y - mapy as f32) * delta_dist.y;
         } else {
             step.y = 1.0;
-            side_dist.y = (map_y as f32 + 1.0 - pos.y) * delta_dist.y;
+            side_dist.y = (mapy as f32 + 1.0 - pos.y) * delta_dist.y;
         }
 
         let mut side: i32;
@@ -271,22 +261,22 @@ pub fn cast_rays(draw: &mut RaylibDrawHandle, player: &Player, map: &Map) {
             if side_dist.x < side_dist.y {
                 //map_connect_points(draw, pos, pos + ray_dir * side_dist.x, color_ray);
                 side_dist.x += delta_dist.x;
-                map_x += step.x as isize;
+                mapx += step.x as isize;
                 side = 0;
 
             } else {
                 //map_connect_points(draw, pos, pos + ray_dir * side_dist.y, color_ray);
                 side_dist.y += delta_dist.y;
-                map_y += step.y as isize;
+                mapy += step.y as isize;
                 side = 1;
             }
 
             // out of bounds check (no wall in sight)
-            if map_x as usize >= MAP_WIDTH || map_y as usize >= MAP_HEIGHT {
+            if mapx as usize >= MAP_WIDTH || mapy as usize >= MAP_HEIGHT {
                 break;
             }
 
-            let cell = map.get_cell(map_x as usize, map_y as usize);
+            let cell = map.get_cell(mapx as usize, mapy as usize);
             let color = get_cell_color(cell);
 
             if let Some(mut color) = color {
