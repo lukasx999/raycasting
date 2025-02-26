@@ -112,19 +112,6 @@ fn map_square(d: &mut RaylibDrawHandle, pos: Vector2, color: Color) {
     );
 }
 
-fn get_cell_color(cell: i32) -> Option<Color> {
-    match cell {
-        1 => Some(Color::from_hex("585a5c").unwrap()),
-        2 => Some(Color::from_hex("164c82").unwrap()),
-        3 => Some(Color::from_hex("fcba03").unwrap()),
-        4 => Some(Color::from_hex("b82d23").unwrap()),
-        0 => None,
-        _ => panic!("Unknown cell type"),
-    }
-}
-
-
-
 
 
 const PLAYER_STEP: f32 = 0.5;
@@ -205,6 +192,25 @@ impl Player {
 
 }
 
+fn get_cell_color(cell: i32) -> Option<Color> {
+    match cell {
+        1 => Some(Color::from_hex("585a5c").unwrap()),
+        2 => Some(Color::from_hex("164c82").unwrap()),
+        3 => Some(Color::from_hex("fcba03").unwrap()),
+        4 => Some(Color::from_hex("b82d23").unwrap()),
+        0 => None,
+        _ => panic!("Unknown cell type"),
+    }
+}
+
+// determines which side of a cell was hit by the ray
+#[derive(Debug, Clone, Copy)]
+enum Side {
+    X, Y
+}
+
+// TODO: refactor into struct
+
 pub fn cast_rays(draw: &mut RaylibDrawHandle, player: &Player, map: &Map) {
 
     for x in (0..=SCREEN_WIDTH).step_by(RESOLUTION as usize) {
@@ -253,22 +259,23 @@ pub fn cast_rays(draw: &mut RaylibDrawHandle, player: &Player, map: &Map) {
             side_dist.y = (mapy as f32 + 1.0 - pos.y) * delta_dist.y;
         }
 
-        let mut side: i32;
 
         // DDA
         loop {
+
+            let side: Side;
 
             if side_dist.x < side_dist.y {
                 //map_connect_points(draw, pos, pos + ray_dir * side_dist.x, color_ray);
                 side_dist.x += delta_dist.x;
                 mapx += step.x as isize;
-                side = 0;
+                side = Side::X;
 
             } else {
                 //map_connect_points(draw, pos, pos + ray_dir * side_dist.y, color_ray);
                 side_dist.y += delta_dist.y;
                 mapy += step.y as isize;
-                side = 1;
+                side = Side::Y;
             }
 
             // out of bounds check (no wall in sight)
@@ -283,15 +290,14 @@ pub fn cast_rays(draw: &mut RaylibDrawHandle, player: &Player, map: &Map) {
                 //map_square(draw, Vector2::new(map_x as f32, map_y as f32), Color::PURPLE);
 
                 // make x-side slighty darker
-                if side == 0 {
+                if let Side::X = side {
                     color = color.brightness(0.1);
                 }
 
                 // substract delta_dist once, because the dda algorithm went one cell too far
-                let perp_wall_dist = if side == 0 {
-                    side_dist.x - delta_dist.x
-                } else {
-                    side_dist.y - delta_dist.y
+                let perp_wall_dist = match side {
+                    Side::X => side_dist.x - delta_dist.x,
+                    Side::Y => side_dist.y - delta_dist.y,
                 };
 
                 let line_height = (SCREEN_HEIGHT as f32 / perp_wall_dist) as i32;
