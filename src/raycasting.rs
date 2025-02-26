@@ -13,7 +13,7 @@ const CELL_SIZE: i32 = 50;
 //    (SCREEN_HEIGHT / 2 - CELL_SIZE * MAP_HEIGHT as i32 / 2) as f32
 //);
 
-const OFFSET: Vector2 = Vector2::new(15.0, 15.0);
+const OFFSET: Vector2 = Vector2::new(10.0, 40.0);
 
 
 
@@ -74,7 +74,7 @@ impl Map {
             MAP_HEIGHT as f32 * CELL_SIZE as f32
         );
 
-        draw.draw_rectangle_lines_ex(map_border, 3.0, Color::WHITESMOKE);
+        draw.draw_rectangle_lines_ex(map_border, 1.0, Color::WHITESMOKE);
 
     }
 }

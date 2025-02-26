@@ -96,6 +96,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             player.render(&mut draw);
         }
 
+        draw.draw_fps(10, 10);
+
     }
 
     Ok(())
