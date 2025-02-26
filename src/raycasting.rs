@@ -4,9 +4,8 @@ use crate::{SCREEN_WIDTH, SCREEN_HEIGHT};
 
 // https://lodev.org/cgtutor/raycasting.html
 
-
-
-const CELL_SIZE: i32 = 50;
+const CELL_SIZE: i32 = 25;
+const RESOLUTION: i32 = 1;
 
 //const OFFSET: Vector2 = Vector2::new(
 //    (SCREEN_WIDTH  / 2 - CELL_SIZE * MAP_WIDTH  as i32 / 2) as f32,
@@ -21,7 +20,7 @@ const OFFSET: Vector2 = Vector2::new(10.0, 40.0);
 
 type CellType = i32;
 const MAP_WIDTH: usize = 10;
-const MAP_HEIGHT: usize = MAP_WIDTH;
+const MAP_HEIGHT: usize = 15;
 
 pub struct Map([[CellType; MAP_WIDTH]; MAP_HEIGHT]);
 
@@ -33,13 +32,18 @@ impl Map {
             [ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 ],
             [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
             [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
-            [ 1, 0, 0, 0, 0, 0, 0, 3, 0, 1 ],
-            [ 1, 0, 0, 0, 0, 0, 0, 2, 0, 1 ],
+            [ 1, 0, 2, 0, 0, 4, 0, 2, 0, 1 ],
+            [ 1, 0, 3, 0, 0, 0, 0, 3, 0, 1 ],
+            [ 1, 0, 4, 0, 0, 0, 0, 4, 0, 1 ],
+            [ 1, 0, 2, 0, 0, 0, 0, 2, 0, 1 ],
+            [ 1, 0, 2, 0, 0, 0, 0, 2, 0, 1 ],
+            [ 1, 0, 2, 0, 0, 0, 0, 2, 0, 1 ],
+            [ 1, 0, 2, 0, 0, 0, 0, 2, 0, 1 ],
+            [ 1, 0, 2, 0, 4, 2, 0, 2, 0, 1 ],
+            [ 1, 0, 2, 0, 3, 1, 0, 2, 0, 1 ],
             [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
             [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
-            [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
-            [ 1, 0, 0, 3, 0, 2, 0, 4, 0, 1 ],
-            [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
+            [ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 ],
         ])
     }
 
@@ -83,7 +87,7 @@ impl Map {
 // Helper functions
 
 fn map_connect_points(d: &mut RaylibDrawHandle, p1: Vector2, p2: Vector2, color: Color) {
-    let size = 5.0;
+    let size = 3.0;
     d.draw_line_ex(
         p1 * CELL_SIZE as f32 + OFFSET,
         p2 * CELL_SIZE as f32 + OFFSET,
@@ -123,7 +127,7 @@ fn get_cell_color(cell: i32) -> Option<Color> {
 
 
 
-const PLAYER_STEP: f32 = 0.3;
+const PLAYER_STEP: f32 = 0.5;
 
 #[derive(Debug, Clone, Copy)]
 pub enum Direction {
@@ -143,28 +147,30 @@ pub struct Player {
 impl Player {
     pub fn new() -> Self {
         Self {
-            position:  Vector2::new(2.0, 5.0),
+            position:  Vector2::new(5.0, 7.0),
             direction: Vector2::new(1.0, 0.0),
             plane:     Vector2::new(0.0, 0.66),
         }
     }
 
     pub fn move_(&mut self, dir: Direction) {
-        use std::f32::consts::PI;
+        use std::f32::consts::FRAC_PI_2;
+
+        let step = PLAYER_STEP / 10.0;
 
         use Direction as D;
         match dir {
-            D::North => self.position += self.direction * PLAYER_STEP,
-            D::South => self.position -= self.direction * PLAYER_STEP,
-            D::East  => self.position += self.direction.rotated(PI / 2.0) * PLAYER_STEP,
-            D::West  => self.position -= self.direction.rotated(PI / 2.0) * PLAYER_STEP,
+            D::North => self.position += self.direction * step,
+            D::South => self.position -= self.direction * step,
+            D::East  => self.position += self.direction.rotated(FRAC_PI_2) * step,
+            D::West  => self.position -= self.direction.rotated(FRAC_PI_2) * step,
         }
     }
 
     pub fn rotate(&mut self, counter_clockwise: bool, using_mouse: bool) {
         let mut step = if counter_clockwise { -PLAYER_STEP } else { PLAYER_STEP };
         if using_mouse {
-            step /= 3.0;
+            step /= 10.0;
         }
         self.direction.rotate(step);
         self.plane.rotate(step);
@@ -181,7 +187,7 @@ impl Player {
     }
 
     pub fn render(&self, draw: &mut RaylibDrawHandle) {
-        let color = Color::from_hex("3888c2").unwrap();
+        let color = Color::WHITESMOKE;
 
         let pos    = self.position;
         let dir    = self.position + self.direction;
@@ -193,7 +199,7 @@ impl Player {
         map_connect_points(draw, pos, plane2, color); // left-diagonal
         map_connect_points(draw, pos, plane1, color); // right-diagonal
 
-        map_point(draw, pos, 10.0, color);
+        map_point(draw, pos, 5.0, color);
 
     }
 
@@ -204,7 +210,7 @@ impl Player {
 pub fn cast_rays(draw: &mut RaylibDrawHandle, player: &Player, map: &Map) {
 
     //for x in 0..=SCREEN_WIDTH {
-    for x in (0..=SCREEN_WIDTH).step_by(CELL_SIZE as usize) {
+    for x in (0..=SCREEN_WIDTH).step_by(RESOLUTION as usize) {
     //let x = 0; { // only 1 ray for testing
 
         /* -1.0 <-> 0.0 <-> 1.0 */
@@ -303,7 +309,7 @@ pub fn cast_rays(draw: &mut RaylibDrawHandle, player: &Player, map: &Map) {
                 let start = SCREEN_HEIGHT / 2 - line_height / 2;
                 let start = start.clamp(0, std::i32::MAX);
 
-                draw.draw_rectangle(x, start, CELL_SIZE, line_height, color);
+                draw.draw_rectangle(x, start, RESOLUTION, line_height, color);
 
                 break;
             }
