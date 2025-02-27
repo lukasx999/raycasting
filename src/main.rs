@@ -82,16 +82,17 @@ impl Application {
 
     }
 
+    // TODO: J and K for changing fov length
     pub fn handle_input(&mut self, draw: &mut RaylibDrawHandle, key: Option<KeyboardKey>) {
         let Self { player, show_minimap, .. } = self;
 
         let mouse = draw.get_mouse_delta();
 
-        if mouse.x < 0.0 || draw.is_key_down(KeyboardKey::KEY_U) {
+        if mouse.x < 0.0 || draw.is_key_down(KeyboardKey::KEY_H) {
             player.rotate(true);
         }
 
-        if mouse.x > 0.0 || draw.is_key_down(KeyboardKey::KEY_I) {
+        if mouse.x > 0.0 || draw.is_key_down(KeyboardKey::KEY_L) {
             player.rotate(false);
         }
 
