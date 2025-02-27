@@ -1,10 +1,10 @@
 use raylib::prelude::*;
 
-use crate::{SCREEN_WIDTH, SCREEN_HEIGHT};
+use crate::{SCREEN_WIDTH, SCREEN_HEIGHT, TextureDrawHandle};
 
 // https://lodev.org/cgtutor/raycasting.html
 
-const CELL_SIZE: i32 = 25;
+pub const CELL_SIZE: i32 = 25;
 const RESOLUTION: i32 = 1;
 
 //const OFFSET: Vector2 = Vector2::new(
@@ -12,15 +12,13 @@ const RESOLUTION: i32 = 1;
 //    (SCREEN_HEIGHT / 2 - CELL_SIZE * MAP_HEIGHT as i32 / 2) as f32
 //);
 
-const OFFSET: Vector2 = Vector2::new(10.0, 40.0);
-
-
+pub const OFFSET: Vector2 = Vector2::new(10.0, 40.0);
 
 
 
 type CellType = i32;
-const MAP_WIDTH: usize = 10;
-const MAP_HEIGHT: usize = 15;
+pub const MAP_WIDTH:  usize = 10;
+pub const MAP_HEIGHT: usize = 15;
 
 pub struct Map([[CellType; MAP_WIDTH]; MAP_HEIGHT]);
 
@@ -51,16 +49,16 @@ impl Map {
         self.0[y][x]
     }
 
-    pub fn render(&self, draw: &mut RaylibDrawHandle) {
-        let color_cell_bg = Color::from_hex("2e2e2e").unwrap();
+    pub fn render(&self, draw: &mut TextureDrawHandle) {
+         let color_cell_bg = Color::from_hex("2e2e2e").unwrap();
 
         for (y, row) in self.0.iter().enumerate() {
             for (x, cell) in row.iter().enumerate() {
                 let color = get_cell_color(*cell).unwrap_or(color_cell_bg);
 
                 let rec_cell = Rectangle::new(
-                    x as f32 * CELL_SIZE as f32 + OFFSET.x,
-                    y as f32 * CELL_SIZE as f32 + OFFSET.y,
+                    x as f32 * CELL_SIZE as f32,
+                    y as f32 * CELL_SIZE as f32,
                     CELL_SIZE as f32,
                     CELL_SIZE as f32,
                 );
@@ -72,8 +70,8 @@ impl Map {
         }
 
         let map_border = Rectangle::new(
-            OFFSET.x,
-            OFFSET.y,
+            0.0,
+            0.0,
             MAP_WIDTH as f32 * CELL_SIZE as f32,
             MAP_HEIGHT as f32 * CELL_SIZE as f32
         );
@@ -86,27 +84,27 @@ impl Map {
 
 // Helper functions
 
-fn map_connect_points(d: &mut RaylibDrawHandle, p1: Vector2, p2: Vector2, color: Color) {
+fn map_connect_points(d: &mut TextureDrawHandle, p1: Vector2, p2: Vector2, color: Color) {
     let size = 3.0;
     d.draw_line_ex(
-        p1 * CELL_SIZE as f32 + OFFSET,
-        p2 * CELL_SIZE as f32 + OFFSET,
+        p1 * CELL_SIZE as f32,
+        p2 * CELL_SIZE as f32,
         size,
         color
     );
 }
 
-fn map_point(d: &mut RaylibDrawHandle, center: Vector2, size: f32, color: Color) {
+fn map_point(d: &mut TextureDrawHandle, center: Vector2, size: f32, color: Color) {
     d.draw_circle_v(
-        center * CELL_SIZE as f32 + OFFSET,
+        center * CELL_SIZE as f32,
         size,
         color
     );
 }
 
-fn map_square(d: &mut RaylibDrawHandle, pos: Vector2, color: Color) {
+fn map_square(d: &mut TextureDrawHandle, pos: Vector2, color: Color) {
     d.draw_rectangle_v(
-        pos * CELL_SIZE as f32 + OFFSET,
+        pos * CELL_SIZE as f32,
         Vector2::new(CELL_SIZE as f32, CELL_SIZE as f32),
         color
     );
@@ -171,7 +169,7 @@ impl Player {
         self.plane.y += step;
     }
 
-    pub fn render(&self, draw: &mut RaylibDrawHandle) {
+    pub fn render(&self, draw: &mut TextureDrawHandle) {
         let color = Color::WHITESMOKE;
 
         let pos    = self.position;
@@ -209,7 +207,11 @@ enum Side {
 
 // TODO: refactor into struct
 
-pub fn cast_rays(draw: &mut RaylibDrawHandle, player: &Player, map: &Map) {
+pub fn render_world_3d(
+    draw:   &mut RaylibDrawHandle,
+    player: &Player,
+    map:    &Map
+) {
 
     for x in (0..=SCREEN_WIDTH).step_by(RESOLUTION as usize) {
         let pos = player.position;
@@ -264,13 +266,13 @@ pub fn cast_rays(draw: &mut RaylibDrawHandle, player: &Player, map: &Map) {
             let side: Side;
 
             if side_dist.x < side_dist.y {
-                //map_connect_points(draw, pos, pos + ray_dir * side_dist.x, color_ray);
+                //map_connect_points(draw_minimap, pos, pos + ray_dir * side_dist.x, Color::PURPLE);
                 side_dist.x += delta_dist.x;
                 mapx += step.x as isize;
                 side = Side::X;
 
             } else {
-                //map_connect_points(draw, pos, pos + ray_dir * side_dist.y, color_ray);
+                //map_connect_points(draw_minimap, pos, pos + ray_dir * side_dist.y, Color::PURPLE);
                 side_dist.y += delta_dist.y;
                 mapy += step.y as isize;
                 side = Side::Y;

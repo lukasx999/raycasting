@@ -1,11 +1,22 @@
 use raylib::prelude::*;
 
 mod raycasting;
-use raycasting::{Player, Direction, Map, cast_rays};
+use raycasting::{
+    Player,
+    Direction,
+    Map,
+    render_world_3d,
+    MAP_WIDTH,
+    MAP_HEIGHT,
+    CELL_SIZE,
+    OFFSET,
+};
 
 const SCREEN_WIDTH:  i32 = 1920;
 const SCREEN_HEIGHT: i32 = 1080;
 
+
+type TextureDrawHandle<'a> = RaylibTextureMode<'a, RaylibDrawHandle<'a>>;
 
 
 fn init_raylib() -> (RaylibHandle, RaylibThread) {
@@ -30,6 +41,7 @@ struct Application {
 }
 
 impl Application {
+
     pub fn new() -> Self {
         Self {
             player: Player::new(),
@@ -38,18 +50,36 @@ impl Application {
         }
     }
 
-    pub fn render(&mut self, draw: &mut RaylibDrawHandle) {
+    pub fn render(
+        &mut self,
+        thread:          &RaylibThread,
+        draw:            &mut RaylibDrawHandle,
+        texture_minimap: &mut RenderTexture2D
+    ) {
+
         let Self { player, map, show_minimap } = self;
 
         draw.clear_background(Color::from_hex("1f1f1f").unwrap());
+        draw.draw_fps(10, 10);
+        render_world_3d(draw, player, map);
 
-        cast_rays(draw, player, map);
+        {
+            let mut texture_draw = draw.begin_texture_mode(&thread, texture_minimap);
+            map.render(&mut texture_draw);
+            player.render(&mut texture_draw);
+        }
 
         if *show_minimap {
-            map.render(draw);
-            player.render(draw);
-            draw.draw_fps(10, 10);
+            // texture has to be y-flipped because of some OpenGL BS
+            let rec = Rectangle::new(
+                0.0,
+                0.0,
+                 texture_minimap.width()  as f32,
+                -texture_minimap.height() as f32
+            );
+            draw.draw_texture_rec(&texture_minimap, rec, OFFSET, Color::WHITE);
         }
+
     }
 
     pub fn handle_input(&mut self, draw: &mut RaylibDrawHandle, key: Option<KeyboardKey>) {
@@ -99,28 +129,21 @@ impl Application {
 fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut app = Application::new();
-
     let (mut rl, thread) = init_raylib();
 
-    let mut texture: RenderTexture2D = rl.load_render_texture(&thread, 500, 500).unwrap();
+    let mut texture_minimap: RenderTexture2D = rl.load_render_texture(
+        &thread,
+        MAP_WIDTH  as u32 * CELL_SIZE as u32,
+        MAP_HEIGHT as u32 * CELL_SIZE as u32,
+    )?;
 
     while !rl.window_should_close() {
-
 
         let key = rl.get_key_pressed(); // cannot be called after begin_drawing()
         let mut draw = rl.begin_drawing(&thread);
 
-        {
-            let mut mode = draw.begin_texture_mode(&thread, &mut texture);
-            mode.clear_background(Color::WHITESMOKE);
-            mode.draw_rectangle(0, 0, 300, 300, Color::RED);
-        }
-
-
         app.handle_input(&mut draw, key);
-        app.render(&mut draw);
-
-        draw.draw_texture(&texture, 100, 100, Color::WHITESMOKE);
+        app.render(&thread, &mut draw, &mut texture_minimap);
 
     }
 
