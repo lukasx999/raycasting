@@ -100,6 +100,7 @@ impl Application {
 
 
 // TODO: framebuffer for layering ui
+// TODO: or: BeginTextureMode() for layering
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
 
