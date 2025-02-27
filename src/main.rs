@@ -1,3 +1,6 @@
+use std::rc::Rc;
+use std::cell::RefCell;
+
 use raylib::prelude::*;
 
 mod raycasting;
@@ -61,13 +64,14 @@ impl Application {
 
         draw.clear_background(Color::from_hex("1f1f1f").unwrap());
         draw.draw_fps(10, 10);
-        render_world_3d(draw, player, map);
 
         {
             let mut texture_draw = draw.begin_texture_mode(&thread, texture_minimap);
             map.render(&mut texture_draw);
             player.render(&mut texture_draw);
         }
+
+        render_world_3d(draw, thread, player, map, texture_minimap);
 
         if *show_minimap {
             // texture has to be y-flipped because of some OpenGL BS
@@ -82,11 +86,11 @@ impl Application {
 
     }
 
-    // TODO: J and K for changing fov length
     pub fn handle_input(&mut self, draw: &mut RaylibDrawHandle, key: Option<KeyboardKey>) {
         let Self { player, show_minimap, .. } = self;
 
         let mouse = draw.get_mouse_delta();
+        let ctrl  = draw.is_key_down(KeyboardKey::KEY_LEFT_CONTROL);
 
         if mouse.x < 0.0 || draw.is_key_down(KeyboardKey::KEY_H) {
             player.rotate(true);
@@ -115,8 +119,10 @@ impl Application {
         if let Some(key) = key {
             use KeyboardKey as K;
             match key {
-                K::KEY_O   => player.change_fov_len(true),
-                K::KEY_P   => player.change_fov_len(false),
+                K::KEY_J if ctrl => player.increase_fov_width(true),
+                K::KEY_K if ctrl => player.increase_fov_width(false),
+                K::KEY_J => player.increase_fov(true),
+                K::KEY_K => player.increase_fov(false),
                 K::KEY_TAB => *show_minimap = !*show_minimap,
                 K::KEY_Q   => std::process::exit(0),
                 _ => {}
@@ -126,6 +132,8 @@ impl Application {
     }
 
 }
+
+// TODO: use Rc<RefCell<T>> for shared mutable access to `draw`
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
 

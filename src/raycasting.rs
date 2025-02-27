@@ -30,15 +30,15 @@ impl Map {
             [ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 ],
             [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
             [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
-            [ 1, 0, 2, 0, 0, 4, 0, 2, 0, 1 ],
-            [ 1, 0, 3, 0, 0, 0, 0, 3, 0, 1 ],
-            [ 1, 0, 4, 0, 0, 0, 0, 4, 0, 1 ],
-            [ 1, 0, 2, 0, 0, 0, 0, 2, 0, 1 ],
-            [ 1, 0, 2, 0, 0, 0, 0, 2, 0, 1 ],
-            [ 1, 0, 2, 0, 0, 0, 0, 2, 0, 1 ],
-            [ 1, 0, 2, 0, 0, 0, 0, 2, 0, 1 ],
-            [ 1, 0, 2, 0, 4, 2, 0, 2, 0, 1 ],
-            [ 1, 0, 2, 0, 3, 1, 0, 2, 0, 1 ],
+            [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
+            [ 1, 0, 0, 0, 4, 0, 0, 0, 0, 1 ],
+            [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
+            [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
+            [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
+            [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
+            [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
+            [ 1, 0, 2, 3, 4, 4, 3, 2, 0, 1 ],
+            [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
             [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
             [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
             [ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 ],
@@ -84,7 +84,7 @@ impl Map {
 
 // Helper functions
 
-fn map_connect_points(d: &mut TextureDrawHandle, p1: Vector2, p2: Vector2, color: Color) {
+fn map_connect_points(d: &mut impl RaylibDraw, p1: Vector2, p2: Vector2, color: Color) {
     let size = 3.0;
     d.draw_line_ex(
         p1 * CELL_SIZE as f32,
@@ -153,20 +153,32 @@ impl Player {
     }
 
     pub fn rotate(&mut self, counter_clockwise: bool) {
-        let factor = 10.0;
+        let factor = 15.0;
         let step = if counter_clockwise { -PLAYER_STEP } else { PLAYER_STEP } / factor;
         self.direction.rotate(step);
         self.plane.rotate(step);
     }
 
-    pub fn change_fov_len(&mut self, dec_else_inc: bool) {
-        let step = if dec_else_inc { -PLAYER_STEP } else { PLAYER_STEP };
-        self.direction.x += step;
+    pub fn increase_fov(&mut self, dec: bool) {
+        let factor = 2.0;
+        let step = PLAYER_STEP / factor;
+
+        if dec {
+            self.direction -= self.direction * step;
+        } else {
+            self.direction += self.direction * step;
+        }
     }
 
-    pub fn change_fov_width(&mut self, dec_else_inc: bool) {
-        let step = if dec_else_inc { -PLAYER_STEP } else { PLAYER_STEP };
-        self.plane.y += step;
+    pub fn increase_fov_width(&mut self, dec: bool) {
+        let factor = 2.0;
+        let step = PLAYER_STEP / factor;
+
+        if dec {
+            self.plane -= self.plane * step;
+        } else {
+            self.plane += self.plane * step;
+        }
     }
 
     pub fn render(&self, draw: &mut TextureDrawHandle) {
@@ -209,9 +221,12 @@ enum Side {
 
 pub fn render_world_3d(
     draw:   &mut RaylibDrawHandle,
+    thread: &RaylibThread,
     player: &Player,
-    map:    &Map
+    map:    &Map,
+    texture_minimap: &mut RenderTexture2D,
 ) {
+
 
     for x in (0..=SCREEN_WIDTH).step_by(RESOLUTION as usize) {
         let pos = player.position;
@@ -260,19 +275,22 @@ pub fn render_world_3d(
         }
 
 
+
         // DDA
         loop {
 
             let side: Side;
 
+            //let mut texture_draw = draw.begin_texture_mode(&thread, texture_minimap);
+
             if side_dist.x < side_dist.y {
-                //map_connect_points(draw_minimap, pos, pos + ray_dir * side_dist.x, Color::PURPLE);
+                //map_connect_points(&mut texture_draw, pos, pos + ray_dir * side_dist.x, Color::PURPLE);
                 side_dist.x += delta_dist.x;
                 mapx += step.x as isize;
                 side = Side::X;
 
             } else {
-                //map_connect_points(draw_minimap, pos, pos + ray_dir * side_dist.y, Color::PURPLE);
+                //map_connect_points(&mut texture_draw, pos, pos + ray_dir * side_dist.y, Color::PURPLE);
                 side_dist.y += delta_dist.y;
                 mapy += step.y as isize;
                 side = Side::Y;
