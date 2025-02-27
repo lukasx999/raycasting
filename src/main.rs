@@ -12,11 +12,11 @@ fn init_raylib() -> (RaylibHandle, RaylibThread) {
 
     let (mut rl, thread) = raylib::init()
         .size(SCREEN_WIDTH, SCREEN_HEIGHT)
+        .log_level(TraceLogLevel::LOG_ERROR)
         .title("Raycasting")
         .build();
 
     rl.set_target_fps(60);
-    rl.set_trace_log(TraceLogLevel::LOG_ERROR);
     rl.disable_cursor();
 
     (rl, thread)
@@ -57,12 +57,12 @@ impl Application {
 
         let mouse = draw.get_mouse_delta();
 
-        if mouse.x < 0.0 {
-            player.rotate(true, true);
+        if mouse.x < 0.0 || draw.is_key_down(KeyboardKey::KEY_U) {
+            player.rotate(true);
         }
 
-        if mouse.x > 0.0 {
-            player.rotate(false, true);
+        if mouse.x > 0.0 || draw.is_key_down(KeyboardKey::KEY_I) {
+            player.rotate(false);
         }
 
         if draw.is_key_down(KeyboardKey::KEY_D) {
@@ -84,8 +84,6 @@ impl Application {
         if let Some(key) = key {
             use KeyboardKey as K;
             match key {
-                K::KEY_U   => player.rotate(true, false),
-                K::KEY_I   => player.rotate(false, false),
                 K::KEY_O   => player.change_fov_len(true),
                 K::KEY_P   => player.change_fov_len(false),
                 K::KEY_TAB => *show_minimap = !*show_minimap,
@@ -98,23 +96,31 @@ impl Application {
 
 }
 
-
-// TODO: framebuffer for layering ui
-// TODO: or: BeginTextureMode() for layering
-
 fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut app = Application::new();
 
     let (mut rl, thread) = init_raylib();
 
+    let mut texture: RenderTexture2D = rl.load_render_texture(&thread, 500, 500).unwrap();
+
     while !rl.window_should_close() {
+
 
         let key = rl.get_key_pressed(); // cannot be called after begin_drawing()
         let mut draw = rl.begin_drawing(&thread);
 
+        {
+            let mut mode = draw.begin_texture_mode(&thread, &mut texture);
+            mode.clear_background(Color::WHITESMOKE);
+            mode.draw_rectangle(0, 0, 300, 300, Color::RED);
+        }
+
+
         app.handle_input(&mut draw, key);
         app.render(&mut draw);
+
+        draw.draw_texture(&texture, 100, 100, Color::WHITESMOKE);
 
     }
 

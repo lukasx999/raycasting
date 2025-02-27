@@ -154,11 +154,9 @@ impl Player {
         }
     }
 
-    pub fn rotate(&mut self, counter_clockwise: bool, using_mouse: bool) {
-        let mut step = if counter_clockwise { -PLAYER_STEP } else { PLAYER_STEP };
-        if using_mouse {
-            step /= 10.0;
-        }
+    pub fn rotate(&mut self, counter_clockwise: bool) {
+        let factor = 10.0;
+        let step = if counter_clockwise { -PLAYER_STEP } else { PLAYER_STEP } / factor;
         self.direction.rotate(step);
         self.plane.rotate(step);
     }
