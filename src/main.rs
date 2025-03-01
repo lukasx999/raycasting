@@ -142,7 +142,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut app = Application::new();
     let (mut rl, thread) = init_raylib();
 
-    let mut texture_minimap: RenderTexture2D = rl.load_render_texture(
+    let mut texture_minimap = rl.load_render_texture(
         &thread,
         MAP_WIDTH  as u32 * CELL_SIZE as u32,
         MAP_HEIGHT as u32 * CELL_SIZE as u32,

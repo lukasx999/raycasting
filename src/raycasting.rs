@@ -220,7 +220,7 @@ fn get_cell_color(cell: i32) -> Option<Color> {
 }
 
 // determines which side of a cell was hit by the ray
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 enum Side { X, Y }
 
 // TODO: render output into buffer, so texture draw handle doesnt have to be
@@ -234,20 +234,19 @@ pub fn render_world_3d(
     texture_minimap: &mut RenderTexture2D,
 ) {
 
-    {
-        use Color as C;
-        let brick: Texture = [
-            [ C::BLACK, C::BLACK, C::BLACK, C::BLACK, C::BLACK ],
-            [ C::WHITE, C::RED,   C::RED,   C::BLACK, C::BLUE  ],
-            [ C::WHITE, C::RED,   C::RED,   C::BLACK, C::BLUE  ],
-            [ C::BLACK, C::BLACK, C::BLACK, C::BLACK, C::BLACK ],
-            [ C::BLACK, C::BLACK, C::BLACK, C::BLACK, C::BLACK ],
-        ];
-    }
+    let brick: Texture = [
+        [ Color::BLACK, Color::BLACK, Color::BLACK, Color::BLACK, Color::BLACK ],
+        [ Color::BLACK, Color::WHITE, Color::WHITE, Color::WHITE, Color::BLACK ],
+        [ Color::BLACK, Color::WHITE, Color::BLUE,  Color::WHITE, Color::BLACK ],
+        [ Color::BLACK, Color::WHITE, Color::WHITE, Color::WHITE, Color::BLACK ],
+        [ Color::BLACK, Color::BLACK, Color::BLACK, Color::BLACK, Color::BLACK ],
+    ];
 
 
 
     for x in (0..=SCREEN_WIDTH).step_by(RESOLUTION as usize) {
+    //let x = 0; {
+
         let pos = player.position;
 
         /* -1.0 <-> 0.0 <-> 1.0 */
@@ -332,6 +331,7 @@ pub fn render_world_3d(
                     color = color.brightness(0.1);
                 }
 
+
                 // substract delta_dist once, because the dda algorithm went one cell too far
                 let perp_wall_dist = match side {
                     Side::X => side_dist.x - delta_dist.x,
@@ -340,10 +340,47 @@ pub fn render_world_3d(
 
                 let line_height = (SCREEN_HEIGHT as f32 / perp_wall_dist) as i32;
 
-                let start = SCREEN_HEIGHT / 2 - line_height / 2;
-                let start = start.clamp(0, std::i32::MAX);
+                let start = (SCREEN_HEIGHT / 2 - line_height / 2)
+                    .clamp(0, std::i32::MAX);
 
-                draw.draw_rectangle(x, start, RESOLUTION, line_height, color);
+
+
+                // the exact position of where the wall was hit (for textures)
+                let mut wallx = match side {
+                    Side::X => pos.y + perp_wall_dist * ray_dir.y,
+                    Side::Y => pos.x + perp_wall_dist * ray_dir.x,
+                };
+                wallx -= wallx.floor(); // 0.0 <-> 1.0
+
+                let mut tex_x = wallx * TEX_WIDTH as f32;
+
+                // correction for negative rays
+                /*
+                if side == Side::X && ray_dir.x > 0.0 {
+                    tex_x = TEX_WIDTH as f32 - tex_x - 1.0;
+                }
+
+                if side == Side::Y && ray_dir.y < 0.0 {
+                    tex_x = TEX_WIDTH as f32 - tex_x - 1.0;
+                }
+                */
+
+
+                let step = TEX_HEIGHT as f32 / line_height as f32;
+                let mut tex_y = (start as f32 -
+                SCREEN_HEIGHT as f32 / 2.0
+                + line_height as f32 / 2.0) * step;
+
+                for y in start..start+line_height {
+                    tex_y += step;
+
+                    let c = brick[tex_y as usize][tex_x as usize];
+
+                    draw.draw_rectangle(x, y, RESOLUTION, RESOLUTION, c);
+                }
+
+
+                //draw.draw_rectangle(x, start, RESOLUTION, line_height, color);
 
                 break;
             }
