@@ -5,7 +5,10 @@ use crate::{SCREEN_WIDTH, SCREEN_HEIGHT, TextureDrawHandle};
 // https://lodev.org/cgtutor/raycasting.html
 
 pub const CELL_SIZE: i32 = 25;
-const RESOLUTION: i32 = 1;
+
+// if resolution is too high (low), frames will drop because of begin_texture_mode()
+// being created and dropped multiple times every frame
+const RESOLUTION: i32 = 10;
 
 //const OFFSET: Vector2 = Vector2::new(
 //    (SCREEN_WIDTH  / 2 - CELL_SIZE * MAP_WIDTH  as i32 / 2) as f32,
@@ -213,11 +216,7 @@ fn get_cell_color(cell: i32) -> Option<Color> {
 
 // determines which side of a cell was hit by the ray
 #[derive(Debug, Clone, Copy)]
-enum Side {
-    X, Y
-}
-
-// TODO: refactor into struct
+enum Side { X, Y }
 
 pub fn render_world_3d(
     draw:   &mut RaylibDrawHandle,
@@ -226,7 +225,6 @@ pub fn render_world_3d(
     map:    &Map,
     texture_minimap: &mut RenderTexture2D,
 ) {
-
 
     for x in (0..=SCREEN_WIDTH).step_by(RESOLUTION as usize) {
         let pos = player.position;
@@ -256,8 +254,6 @@ pub fn render_world_3d(
         let mut side_dist = Vector2::zero();
 
 
-        // TODO: why does multiplying perpendicular distance by delta_dist
-        // yield euclidean distance?
         if ray_dir.x < 0.0 {
             step.x = -1.0;
             side_dist.x = (pos.x - mapx as f32) * delta_dist.x;
@@ -281,16 +277,17 @@ pub fn render_world_3d(
 
             let side: Side;
 
-            //let mut texture_draw = draw.begin_texture_mode(&thread, texture_minimap);
+            let mut texture_draw = draw.begin_texture_mode(&thread, texture_minimap);
+            let color_ray = Color::from_hex("4a4949").unwrap();
 
             if side_dist.x < side_dist.y {
-                //map_connect_points(&mut texture_draw, pos, pos + ray_dir * side_dist.x, Color::PURPLE);
+                map_connect_points(&mut texture_draw, pos, pos + ray_dir * side_dist.x, color_ray);
                 side_dist.x += delta_dist.x;
                 mapx += step.x as isize;
                 side = Side::X;
 
             } else {
-                //map_connect_points(&mut texture_draw, pos, pos + ray_dir * side_dist.y, Color::PURPLE);
+                map_connect_points(&mut texture_draw, pos, pos + ray_dir * side_dist.y, color_ray);
                 side_dist.y += delta_dist.y;
                 mapy += step.y as isize;
                 side = Side::Y;
@@ -305,7 +302,9 @@ pub fn render_world_3d(
             let color = get_cell_color(cell);
 
             if let Some(mut color) = color {
-                //map_square(draw, Vector2::new(map_x as f32, map_y as f32), Color::PURPLE);
+
+                map_square(&mut texture_draw, Vector2::new(mapx as f32, mapy as f32), color.brightness(0.3));
+                drop(texture_draw);
 
                 // make x-side slighty darker
                 if let Side::X = side {

@@ -1,6 +1,3 @@
-use std::rc::Rc;
-use std::cell::RefCell;
-
 use raylib::prelude::*;
 
 mod raycasting;
@@ -68,19 +65,26 @@ impl Application {
         {
             let mut texture_draw = draw.begin_texture_mode(&thread, texture_minimap);
             map.render(&mut texture_draw);
-            player.render(&mut texture_draw);
         }
 
         render_world_3d(draw, thread, player, map, texture_minimap);
 
+        // Draw the players FOV above the rays from render_world_3d()
+        {
+            let mut texture_draw = draw.begin_texture_mode(&thread, texture_minimap);
+            player.render(&mut texture_draw);
+        }
+
         if *show_minimap {
+
             // texture has to be y-flipped because of some OpenGL BS
             let rec = Rectangle::new(
                 0.0,
                 0.0,
-                 texture_minimap.width()  as f32,
+                texture_minimap.width() as f32,
                 -texture_minimap.height() as f32
             );
+
             draw.draw_texture_rec(&texture_minimap, rec, OFFSET, Color::WHITE);
         }
 
@@ -132,8 +136,6 @@ impl Application {
     }
 
 }
-
-// TODO: use Rc<RefCell<T>> for shared mutable access to `draw`
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
 
