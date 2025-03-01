@@ -4,6 +4,11 @@ use crate::{SCREEN_WIDTH, SCREEN_HEIGHT, TextureDrawHandle};
 
 // https://lodev.org/cgtutor/raycasting.html
 
+// Texture dimensions
+const TEX_WIDTH: usize = 5;
+const TEX_HEIGHT: usize = TEX_WIDTH;
+type Texture = [[Color; TEX_WIDTH]; TEX_HEIGHT];
+
 pub const CELL_SIZE: i32 = 25;
 
 // if resolution is too high (low), frames will drop because of begin_texture_mode()
@@ -218,6 +223,9 @@ fn get_cell_color(cell: i32) -> Option<Color> {
 #[derive(Debug, Clone, Copy)]
 enum Side { X, Y }
 
+// TODO: render output into buffer, so texture draw handle doesnt have to be
+// created and destroyed every frame
+
 pub fn render_world_3d(
     draw:   &mut RaylibDrawHandle,
     thread: &RaylibThread,
@@ -225,6 +233,19 @@ pub fn render_world_3d(
     map:    &Map,
     texture_minimap: &mut RenderTexture2D,
 ) {
+
+    {
+        use Color as C;
+        let brick: Texture = [
+            [ C::BLACK, C::BLACK, C::BLACK, C::BLACK, C::BLACK ],
+            [ C::WHITE, C::RED,   C::RED,   C::BLACK, C::BLUE  ],
+            [ C::WHITE, C::RED,   C::RED,   C::BLACK, C::BLUE  ],
+            [ C::BLACK, C::BLACK, C::BLACK, C::BLACK, C::BLACK ],
+            [ C::BLACK, C::BLACK, C::BLACK, C::BLACK, C::BLACK ],
+        ];
+    }
+
+
 
     for x in (0..=SCREEN_WIDTH).step_by(RESOLUTION as usize) {
         let pos = player.position;
