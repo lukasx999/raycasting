@@ -5,7 +5,7 @@ use crate::{SCREEN_WIDTH, SCREEN_HEIGHT, TextureDrawHandle};
 // https://lodev.org/cgtutor/raycasting.html
 
 // Texture dimensions
-const TEX_WIDTH: usize = 5;
+const TEX_WIDTH: usize = 200;
 const TEX_HEIGHT: usize = TEX_WIDTH;
 type Texture = [[Color; TEX_WIDTH]; TEX_HEIGHT];
 
@@ -13,7 +13,7 @@ pub const CELL_SIZE: i32 = 25;
 
 // if resolution is too high (low), frames will drop because of begin_texture_mode()
 // being created and dropped multiple times every frame
-const RESOLUTION: i32 = 10;
+const RESOLUTION: i32 = 15;
 
 //const OFFSET: Vector2 = Vector2::new(
 //    (SCREEN_WIDTH  / 2 - CELL_SIZE * MAP_WIDTH  as i32 / 2) as f32,
@@ -234,18 +234,19 @@ pub fn render_world_3d(
     texture_minimap: &mut RenderTexture2D,
 ) {
 
-    let brick: Texture = [
-        [ Color::BLACK, Color::BLACK, Color::BLACK, Color::BLACK, Color::BLACK ],
-        [ Color::BLACK, Color::WHITE, Color::WHITE, Color::WHITE, Color::BLACK ],
-        [ Color::BLACK, Color::WHITE, Color::BLUE,  Color::WHITE, Color::BLACK ],
-        [ Color::BLACK, Color::WHITE, Color::WHITE, Color::WHITE, Color::BLACK ],
-        [ Color::BLACK, Color::BLACK, Color::BLACK, Color::BLACK, Color::BLACK ],
-    ];
+    let mut brick: Texture = [[Color::BLACK; TEX_WIDTH]; TEX_HEIGHT];
+
+    for (y, row) in brick.iter_mut().enumerate() {
+        for (x, cell) in row.iter_mut().enumerate() {
+            let value = y as f32 / TEX_WIDTH as f32;
+            *cell = Color::BLUE.brightness(value);
+        }
+    }
 
 
 
     for x in (0..=SCREEN_WIDTH).step_by(RESOLUTION as usize) {
-    //let x = 0; {
+    //let x = SCREEN_WIDTH / 2; {
 
         let pos = player.position;
 
@@ -352,33 +353,17 @@ pub fn render_world_3d(
                 };
                 wallx -= wallx.floor(); // 0.0 <-> 1.0
 
-                let mut tex_x = wallx * TEX_WIDTH as f32;
-
-                // correction for negative rays
-                /*
-                if side == Side::X && ray_dir.x > 0.0 {
-                    tex_x = TEX_WIDTH as f32 - tex_x - 1.0;
-                }
-
-                if side == Side::Y && ray_dir.y < 0.0 {
-                    tex_x = TEX_WIDTH as f32 - tex_x - 1.0;
-                }
-                */
-
-
+                let tex_x = wallx * TEX_WIDTH as f32;
                 let step = TEX_HEIGHT as f32 / line_height as f32;
-                let mut tex_y = (start as f32 -
-                SCREEN_HEIGHT as f32 / 2.0
-                + line_height as f32 / 2.0) * step;
+                let mut tex_y = 0.0;
 
                 for y in start..start+line_height {
-                    tex_y += step;
 
                     let c = brick[tex_y as usize][tex_x as usize];
+                    draw.draw_rectangle(x, y, RESOLUTION, 1, c);
 
-                    draw.draw_rectangle(x, y, RESOLUTION, RESOLUTION, c);
+                    tex_y += step;
                 }
-
 
                 //draw.draw_rectangle(x, start, RESOLUTION, line_height, color);
 
