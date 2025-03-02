@@ -5,14 +5,12 @@ use crate::{SCREEN_WIDTH, SCREEN_HEIGHT, TextureDrawHandle};
 // https://lodev.org/cgtutor/raycasting.html
 
 // Texture dimensions
-const TEX_WIDTH: usize = 50;
+const TEX_WIDTH: usize = 200;
 const TEX_HEIGHT: usize = TEX_WIDTH;
-type Texture = [[Color; TEX_WIDTH]; TEX_HEIGHT];
+type Texture = Box<[[Color; TEX_WIDTH]; TEX_HEIGHT]>;
 
 pub const CELL_SIZE: i32 = 25;
 
-// if resolution is too high (low), frames will drop because of begin_texture_mode()
-// being created and dropped multiple times every frame
 const RESOLUTION: i32 = 15;
 
 //const OFFSET: Vector2 = Vector2::new(
@@ -43,26 +41,26 @@ impl Map {
         let n = None;
 
         Self([
-            [ w, w, w, w, w, w, w, w, w, w ],
-            [ w, n, n, n, n, n, n, n, n, w ],
-            [ w, n, n, n, n, n, n, n, n, w ],
-            [ w, n, n, n, n, n, n, n, n, w ],
-            [ w, n, i, n, g, n, r, n, n, w ],
-            [ w, n, n, n, n, n, n, n, n, w ],
-            [ w, n, n, n, n, n, n, n, n, w ],
-            [ w, n, u, n, n, n, n, n, n, w ],
-            [ w, n, n, n, n, n, n, n, n, w ],
-            [ w, n, n, n, n, n, n, n, n, w ],
-            [ w, n, g, g, g, g, g, g, n, w ],
-            [ w, n, n, n, n, n, n, n, n, w ],
-            [ w, n, n, n, n, n, n, n, n, w ],
-            [ w, n, n, n, n, n, n, n, n, w ],
-            [ w, w, w, w, w, w, w, w, w, w ],
+            [ w.clone(), w.clone(), w.clone(), w.clone(), w.clone(), w.clone(), w.clone(), w.clone(), w.clone(), w.clone() ],
+            [ w.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), w.clone() ],
+            [ w.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), w.clone() ],
+            [ w.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), w.clone() ],
+            [ w.clone(), n.clone(), i.clone(), n.clone(), g.clone(), n.clone(), r.clone(), n.clone(), n.clone(), w.clone() ],
+            [ w.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), w.clone() ],
+            [ w.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), w.clone() ],
+            [ w.clone(), n.clone(), u.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), w.clone() ],
+            [ w.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), w.clone() ],
+            [ w.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), w.clone() ],
+            [ w.clone(), n.clone(), g.clone(), g.clone(), g.clone(), g.clone(), g.clone(), g.clone(), n.clone(), w.clone() ],
+            [ w.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), w.clone() ],
+            [ w.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), w.clone() ],
+            [ w.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), w.clone() ],
+            [ w.clone(), w.clone(), w.clone(), w.clone(), w.clone(), w.clone(), w.clone(), w.clone(), w.clone(), w.clone() ],
         ])
     }
 
     fn texture_gradient() -> Texture {
-        let mut tex = [[Color::BLACK; TEX_WIDTH]; TEX_HEIGHT];
+        let mut tex = Box::new([[Color::BLACK; TEX_WIDTH]; TEX_HEIGHT]);
 
         for (y, row) in tex.iter_mut().enumerate() {
             for cell in row {
@@ -76,7 +74,7 @@ impl Map {
 
     fn texture_stripes() -> Texture {
 
-        let mut tex = [[Color::BLACK; TEX_WIDTH]; TEX_HEIGHT];
+        let mut tex = Box::new([[Color::BLACK; TEX_WIDTH]; TEX_HEIGHT]);
         let color_a = Color::from_hex("21c4ab").unwrap();
         let color_b = Color::from_hex("2168c4").unwrap();
 
@@ -91,7 +89,7 @@ impl Map {
 
     fn texture_stripes_h() -> Texture {
 
-        let mut tex = [[Color::BLACK; TEX_WIDTH]; TEX_HEIGHT];
+        let mut tex = Box::new([[Color::BLACK; TEX_WIDTH]; TEX_HEIGHT]);
         let color_a = Color::from_hex("e2b81f").unwrap();
         let color_b = Color::from_hex("b0bac4").unwrap();
 
@@ -105,16 +103,16 @@ impl Map {
     }
 
     fn texture_wall() -> Texture {
-        [[Color::BLACK; TEX_WIDTH]; TEX_HEIGHT]
+        Box::new([[Color::BLACK; TEX_WIDTH]; TEX_HEIGHT])
     }
 
     fn texture_red() -> Texture {
-        [[Color::RED; TEX_WIDTH]; TEX_HEIGHT]
+        Box::new([[Color::RED; TEX_WIDTH]; TEX_HEIGHT])
     }
 
 
-    pub fn get_cell(&self, x: usize, y: usize) -> CellType {
-        self.0[y][x]
+    pub fn get_cell(&self, x: usize, y: usize) -> &CellType {
+        &self.0[y][x]
     }
 
     pub fn render(&self, draw: &mut TextureDrawHandle) {
@@ -364,43 +362,13 @@ pub fn render_world_3d(
                 //map_square(&mut texture_draw, Vector2::new(mapx as f32, mapy as f32), color.brightness(0.3));
                 drop(texture_draw);
 
-
                 // substract delta_dist once, because the dda algorithm went one cell too far
                 let perp_wall_dist = match side {
                     Side::X => side_dist.x - delta_dist.x,
                     Side::Y => side_dist.y - delta_dist.y,
                 };
 
-                let line_height = (SCREEN_HEIGHT as f32 / perp_wall_dist) as i32;
-
-                let start = (SCREEN_HEIGHT / 2 - line_height / 2)
-                    .clamp(0, std::i32::MAX);
-
-
-
-                // the exact position of where the wall was hit (for textures)
-                let mut wallx = match side {
-                    Side::X => pos.y + perp_wall_dist * ray_dir.y,
-                    Side::Y => pos.x + perp_wall_dist * ray_dir.x,
-                };
-                wallx -= wallx.floor(); // 0.0 <-> 1.0
-
-                let tex_x = wallx * TEX_WIDTH as f32;
-                let step = TEX_HEIGHT as f32 / line_height as f32;
-                let mut tex_y = 0.0;
-
-                for y in start..start+line_height {
-
-                    let mut color = texture[tex_y as usize][tex_x as usize];
-
-                    if side == Side::Y {
-                        color = color.brightness(-0.3);
-                    }
-
-                    draw.draw_rectangle(x, y, RESOLUTION, 1, color);
-                    tex_y += step;
-                }
-
+                render_texture(draw, x, &texture, pos, side, ray_dir, perp_wall_dist);
                 break;
             }
 
@@ -409,4 +377,43 @@ pub fn render_world_3d(
 
     }
 
+}
+
+fn render_texture(
+    draw:           &mut RaylibDrawHandle,
+    x:              i32,
+    texture:        &Texture,
+    pos:            Vector2,
+    side:           Side,
+    ray_dir:        Vector2,
+    perp_wall_dist: f32,
+) {
+
+    let line_height = (SCREEN_HEIGHT as f32 / perp_wall_dist) as i32;
+
+    let start = (SCREEN_HEIGHT / 2 - line_height / 2)
+        .clamp(0, std::i32::MAX);
+
+    // the exact position of where the wall was hit (for textures)
+    let mut wallx = match side {
+        Side::X => pos.y + perp_wall_dist * ray_dir.y,
+        Side::Y => pos.x + perp_wall_dist * ray_dir.x,
+    };
+    wallx -= wallx.floor(); // 0.0 <-> 1.0
+
+    let tex_x = wallx * TEX_WIDTH as f32;
+    let step = TEX_HEIGHT as f32 / line_height as f32;
+    let mut tex_y = 0.0;
+
+    for y in start..start+line_height {
+
+        let mut color = texture[tex_y as usize][tex_x as usize];
+
+        if side == Side::Y {
+            color = color.brightness(-0.3);
+        }
+
+        draw.draw_rectangle(x, y, RESOLUTION, 1, color);
+        tex_y += step;
+    }
 }
