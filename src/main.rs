@@ -5,10 +5,10 @@ use raycasting::{
     Player,
     Direction,
     Map,
-    render_world_3d,
+    cast_rays,
     MAP_WIDTH,
     MAP_HEIGHT,
-    CELL_SIZE,
+    MAP_CELL_SIZE,
     OFFSET,
 };
 
@@ -60,14 +60,13 @@ impl Application {
         let Self { player, map, show_minimap } = self;
 
         draw.clear_background(Color::from_hex("1f1f1f").unwrap());
-        draw.draw_fps(10, 10);
 
         {
             let mut texture_draw = draw.begin_texture_mode(&thread, texture_minimap);
             map.render(&mut texture_draw);
         }
 
-        render_world_3d(draw, thread, player, map, texture_minimap);
+        cast_rays(draw, thread, player, map, texture_minimap);
 
         // Draw the players FOV above the rays from render_world_3d()
         {
@@ -87,6 +86,8 @@ impl Application {
 
             draw.draw_texture_rec(&texture_minimap, rec, OFFSET, Color::WHITE);
         }
+
+        draw.draw_fps(10, 10);
 
     }
 
@@ -144,8 +145,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut texture_minimap = rl.load_render_texture(
         &thread,
-        MAP_WIDTH  as u32 * CELL_SIZE as u32,
-        MAP_HEIGHT as u32 * CELL_SIZE as u32,
+        MAP_WIDTH  as u32 * MAP_CELL_SIZE as u32,
+        MAP_HEIGHT as u32 * MAP_CELL_SIZE as u32,
     )?;
 
     while !rl.window_should_close() {

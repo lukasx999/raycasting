@@ -5,13 +5,13 @@ use crate::{SCREEN_WIDTH, SCREEN_HEIGHT, TextureDrawHandle};
 // https://lodev.org/cgtutor/raycasting.html
 
 // Texture dimensions
-const TEX_WIDTH: usize = 200;
+const TEX_WIDTH: usize = 50;
 const TEX_HEIGHT: usize = TEX_WIDTH;
 type Texture = Box<[[Color; TEX_WIDTH]; TEX_HEIGHT]>;
 
-pub const CELL_SIZE: i32 = 25;
+pub const MAP_CELL_SIZE: i32 = 25;
 
-const RESOLUTION: i32 = 15;
+const RESOLUTION: i32 = 100;
 
 //const OFFSET: Vector2 = Vector2::new(
 //    (SCREEN_WIDTH  / 2 - CELL_SIZE * MAP_WIDTH  as i32 / 2) as f32,
@@ -34,28 +34,28 @@ impl Map {
 
     pub fn new() -> Self {
         let g = Some(Self::texture_gradient());
-        let w = Some(Self::texture_wall());
         let r = Some(Self::texture_red());
         let i = Some(Self::texture_stripes());
         let u = Some(Self::texture_stripes_h());
+        let o = Some(Self::texture_outline());
         let n = None;
 
         Self([
-            [ w.clone(), w.clone(), w.clone(), w.clone(), w.clone(), w.clone(), w.clone(), w.clone(), w.clone(), w.clone() ],
-            [ w.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), w.clone() ],
-            [ w.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), w.clone() ],
-            [ w.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), w.clone() ],
-            [ w.clone(), n.clone(), i.clone(), n.clone(), g.clone(), n.clone(), r.clone(), n.clone(), n.clone(), w.clone() ],
-            [ w.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), w.clone() ],
-            [ w.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), w.clone() ],
-            [ w.clone(), n.clone(), u.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), w.clone() ],
-            [ w.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), w.clone() ],
-            [ w.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), w.clone() ],
-            [ w.clone(), n.clone(), g.clone(), g.clone(), g.clone(), g.clone(), g.clone(), g.clone(), n.clone(), w.clone() ],
-            [ w.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), w.clone() ],
-            [ w.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), w.clone() ],
-            [ w.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), w.clone() ],
-            [ w.clone(), w.clone(), w.clone(), w.clone(), w.clone(), w.clone(), w.clone(), w.clone(), w.clone(), w.clone() ],
+            [ o.clone(), o.clone(), o.clone(), o.clone(), o.clone(), o.clone(), o.clone(), o.clone(), o.clone(), o.clone() ],
+            [ o.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), o.clone() ],
+            [ o.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), o.clone() ],
+            [ o.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), o.clone() ],
+            [ o.clone(), n.clone(), i.clone(), n.clone(), g.clone(), n.clone(), o.clone(), n.clone(), n.clone(), o.clone() ],
+            [ o.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), o.clone() ],
+            [ o.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), o.clone() ],
+            [ o.clone(), n.clone(), u.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), o.clone() ],
+            [ o.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), o.clone() ],
+            [ o.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), o.clone() ],
+            [ o.clone(), n.clone(), g.clone(), g.clone(), g.clone(), g.clone(), g.clone(), g.clone(), n.clone(), o.clone() ],
+            [ o.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), o.clone() ],
+            [ o.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), o.clone() ],
+            [ o.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), o.clone() ],
+            [ o.clone(), o.clone(), o.clone(), o.clone(), o.clone(), o.clone(), o.clone(), o.clone(), o.clone(), o.clone() ],
         ])
     }
 
@@ -102,14 +102,38 @@ impl Map {
         tex
     }
 
-    fn texture_wall() -> Texture {
-        Box::new([[Color::BLACK; TEX_WIDTH]; TEX_HEIGHT])
+    fn texture_outline() -> Texture {
+
+        let mut tex = Box::new([[Color::BLACK; TEX_WIDTH]; TEX_HEIGHT]);
+        let color_a = Color::from_hex("6c1efc").unwrap();
+        let color_b = Color::RED;
+
+        tex[tex.len()/2][tex[0].len() / 2] = color_b;
+
+        for (y, row) in tex.iter_mut().enumerate() {
+            row[0] = color_a;
+            row[row.len() - 1] = color_a;
+
+            if y == 0 {
+                for cell in row.iter_mut() {
+                    *cell = color_a;
+                }
+            }
+
+            if y == row.len() - 1 {
+                for cell in row.iter_mut() {
+                    *cell = color_a;
+                }
+            }
+
+        }
+
+        tex
     }
 
     fn texture_red() -> Texture {
         Box::new([[Color::RED; TEX_WIDTH]; TEX_HEIGHT])
     }
-
 
     pub fn get_cell(&self, x: usize, y: usize) -> &CellType {
         &self.0[y][x]
@@ -124,10 +148,10 @@ impl Map {
                 let color = Color::BLUE;
 
                 let rec_cell = Rectangle::new(
-                    x as f32 * CELL_SIZE as f32,
-                    y as f32 * CELL_SIZE as f32,
-                    CELL_SIZE as f32,
-                    CELL_SIZE as f32,
+                    x as f32 * MAP_CELL_SIZE as f32,
+                    y as f32 * MAP_CELL_SIZE as f32,
+                    MAP_CELL_SIZE as f32,
+                    MAP_CELL_SIZE as f32,
                 );
 
                 draw.draw_rectangle_rec(rec_cell, color);
@@ -139,8 +163,8 @@ impl Map {
         let map_border = Rectangle::new(
             0.0,
             0.0,
-            MAP_WIDTH as f32 * CELL_SIZE as f32,
-            MAP_HEIGHT as f32 * CELL_SIZE as f32
+            MAP_WIDTH as f32 * MAP_CELL_SIZE as f32,
+            MAP_HEIGHT as f32 * MAP_CELL_SIZE as f32
         );
 
         draw.draw_rectangle_lines_ex(map_border, 1.0, Color::WHITESMOKE);
@@ -154,8 +178,8 @@ impl Map {
 fn map_connect_points(d: &mut impl RaylibDraw, p1: Vector2, p2: Vector2, color: Color) {
     let size = 3.0;
     d.draw_line_ex(
-        p1 * CELL_SIZE as f32,
-        p2 * CELL_SIZE as f32,
+        p1 * MAP_CELL_SIZE as f32,
+        p2 * MAP_CELL_SIZE as f32,
         size,
         color
     );
@@ -163,7 +187,7 @@ fn map_connect_points(d: &mut impl RaylibDraw, p1: Vector2, p2: Vector2, color: 
 
 fn map_point(d: &mut TextureDrawHandle, center: Vector2, size: f32, color: Color) {
     d.draw_circle_v(
-        center * CELL_SIZE as f32,
+        center * MAP_CELL_SIZE as f32,
         size,
         color
     );
@@ -171,8 +195,8 @@ fn map_point(d: &mut TextureDrawHandle, center: Vector2, size: f32, color: Color
 
 fn map_square(d: &mut TextureDrawHandle, pos: Vector2, color: Color) {
     d.draw_rectangle_v(
-        pos * CELL_SIZE as f32,
-        Vector2::new(CELL_SIZE as f32, CELL_SIZE as f32),
+        pos * MAP_CELL_SIZE as f32,
+        Vector2::new(MAP_CELL_SIZE as f32, MAP_CELL_SIZE as f32),
         color
     );
 }
@@ -271,10 +295,15 @@ impl Player {
 #[derive(Debug, Clone, Copy, PartialEq)]
 enum Side { X, Y }
 
+
+fn raycasting_init() {
+}
+
+
 // TODO: render output into buffer, so texture draw handle doesnt have to be
 // created and destroyed every frame
 
-pub fn render_world_3d(
+pub fn cast_rays(
     draw:   &mut RaylibDrawHandle,
     thread: &RaylibThread,
     player: &Player,
@@ -282,7 +311,8 @@ pub fn render_world_3d(
     texture_minimap: &mut RenderTexture2D,
 ) {
 
-    for x in (0..=SCREEN_WIDTH).step_by(RESOLUTION as usize) {
+    //for x in (0..=SCREEN_WIDTH).step_by(RESOLUTION as usize) {
+    for x in 0..=SCREEN_WIDTH {
     //let x = SCREEN_WIDTH / 2; {
 
         let pos = player.position;
@@ -335,17 +365,17 @@ pub fn render_world_3d(
 
             let side: Side;
 
-            let mut texture_draw = draw.begin_texture_mode(&thread, texture_minimap);
-            let color_ray = Color::from_hex("4a4949").unwrap();
+            //let mut texture_draw = draw.begin_texture_mode(&thread, texture_minimap);
+            //let color_ray = Color::from_hex("4a4949").unwrap();
 
             if side_dist.x < side_dist.y {
-                map_connect_points(&mut texture_draw, pos, pos + ray_dir * side_dist.x, color_ray);
+                //map_connect_points(&mut texture_draw, pos, pos + ray_dir * side_dist.x, color_ray);
                 side_dist.x += delta_dist.x;
                 mapx += step.x as isize;
                 side = Side::X;
 
             } else {
-                map_connect_points(&mut texture_draw, pos, pos + ray_dir * side_dist.y, color_ray);
+                //map_connect_points(&mut texture_draw, pos, pos + ray_dir * side_dist.y, color_ray);
                 side_dist.y += delta_dist.y;
                 mapy += step.y as isize;
                 side = Side::Y;
@@ -360,7 +390,7 @@ pub fn render_world_3d(
             if let Some(texture) = cell {
 
                 //map_square(&mut texture_draw, Vector2::new(mapx as f32, mapy as f32), color.brightness(0.3));
-                drop(texture_draw);
+                //drop(texture_draw);
 
                 // substract delta_dist once, because the dda algorithm went one cell too far
                 let perp_wall_dist = match side {
@@ -413,7 +443,8 @@ fn render_texture(
             color = color.brightness(-0.3);
         }
 
-        draw.draw_rectangle(x, y, RESOLUTION, 1, color);
+        //draw.draw_rectangle(x, y, RESOLUTION, 1, color);
+        draw.draw_rectangle(x, y, 1, 1, color);
         tex_y += step;
     }
 }
