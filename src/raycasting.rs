@@ -5,7 +5,7 @@ use crate::{SCREEN_WIDTH, SCREEN_HEIGHT, TextureDrawHandle};
 // https://lodev.org/cgtutor/raycasting.html
 
 // Texture dimensions
-const TEX_WIDTH: usize = 200;
+const TEX_WIDTH: usize = 50;
 const TEX_HEIGHT: usize = TEX_WIDTH;
 type Texture = [[Color; TEX_WIDTH]; TEX_HEIGHT];
 
@@ -24,7 +24,7 @@ pub const OFFSET: Vector2 = Vector2::new(10.0, 40.0);
 
 
 
-type CellType = i32;
+type CellType = Option<Texture>;
 pub const MAP_WIDTH:  usize = 10;
 pub const MAP_HEIGHT: usize = 15;
 
@@ -33,25 +33,85 @@ pub struct Map([[CellType; MAP_WIDTH]; MAP_HEIGHT]);
 // TODO: load map from file
 
 impl Map {
+
     pub fn new() -> Self {
+        let g = Some(Self::texture_gradient());
+        let w = Some(Self::texture_wall());
+        let r = Some(Self::texture_red());
+        let i = Some(Self::texture_stripes());
+        let u = Some(Self::texture_stripes_h());
+        let n = None;
+
         Self([
-            [ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 ],
-            [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
-            [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
-            [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
-            [ 1, 0, 0, 0, 4, 0, 0, 0, 0, 1 ],
-            [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
-            [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
-            [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
-            [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
-            [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
-            [ 1, 0, 2, 3, 4, 4, 3, 2, 0, 1 ],
-            [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
-            [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
-            [ 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
-            [ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 ],
+            [ w, w, w, w, w, w, w, w, w, w ],
+            [ w, n, n, n, n, n, n, n, n, w ],
+            [ w, n, n, n, n, n, n, n, n, w ],
+            [ w, n, n, n, n, n, n, n, n, w ],
+            [ w, n, i, n, g, n, r, n, n, w ],
+            [ w, n, n, n, n, n, n, n, n, w ],
+            [ w, n, n, n, n, n, n, n, n, w ],
+            [ w, n, u, n, n, n, n, n, n, w ],
+            [ w, n, n, n, n, n, n, n, n, w ],
+            [ w, n, n, n, n, n, n, n, n, w ],
+            [ w, n, g, g, g, g, g, g, n, w ],
+            [ w, n, n, n, n, n, n, n, n, w ],
+            [ w, n, n, n, n, n, n, n, n, w ],
+            [ w, n, n, n, n, n, n, n, n, w ],
+            [ w, w, w, w, w, w, w, w, w, w ],
         ])
     }
+
+    fn texture_gradient() -> Texture {
+        let mut tex = [[Color::BLACK; TEX_WIDTH]; TEX_HEIGHT];
+
+        for (y, row) in tex.iter_mut().enumerate() {
+            for cell in row {
+                let value = y as f32 / TEX_WIDTH as f32;
+                *cell = Color::BLUE.brightness(value);
+            }
+        }
+
+        tex
+    }
+
+    fn texture_stripes() -> Texture {
+
+        let mut tex = [[Color::BLACK; TEX_WIDTH]; TEX_HEIGHT];
+        let color_a = Color::from_hex("21c4ab").unwrap();
+        let color_b = Color::from_hex("2168c4").unwrap();
+
+        for row in tex.iter_mut() {
+            for (x, cell) in row.iter_mut().enumerate() {
+                *cell = if x % 2 == 0 { color_a } else { color_b };
+            }
+        }
+
+        tex
+    }
+
+    fn texture_stripes_h() -> Texture {
+
+        let mut tex = [[Color::BLACK; TEX_WIDTH]; TEX_HEIGHT];
+        let color_a = Color::from_hex("e2b81f").unwrap();
+        let color_b = Color::from_hex("b0bac4").unwrap();
+
+        for (y, row) in tex.iter_mut().enumerate() {
+            for cell in row.iter_mut() {
+                *cell = if y % 2 == 0 { color_a } else { color_b };
+            }
+        }
+
+        tex
+    }
+
+    fn texture_wall() -> Texture {
+        [[Color::BLACK; TEX_WIDTH]; TEX_HEIGHT]
+    }
+
+    fn texture_red() -> Texture {
+        [[Color::RED; TEX_WIDTH]; TEX_HEIGHT]
+    }
+
 
     pub fn get_cell(&self, x: usize, y: usize) -> CellType {
         self.0[y][x]
@@ -62,7 +122,8 @@ impl Map {
 
         for (y, row) in self.0.iter().enumerate() {
             for (x, cell) in row.iter().enumerate() {
-                let color = get_cell_color(*cell).unwrap_or(color_cell_bg);
+                //let color = get_cell_color(*cell).unwrap_or(color_cell_bg);
+                let color = Color::BLUE;
 
                 let rec_cell = Rectangle::new(
                     x as f32 * CELL_SIZE as f32,
@@ -208,17 +269,6 @@ impl Player {
 
 }
 
-fn get_cell_color(cell: i32) -> Option<Color> {
-    match cell {
-        1 => Some(Color::from_hex("585a5c").unwrap()),
-        2 => Some(Color::from_hex("164c82").unwrap()),
-        3 => Some(Color::from_hex("fcba03").unwrap()),
-        4 => Some(Color::from_hex("b82d23").unwrap()),
-        0 => None,
-        _ => panic!("Unknown cell type"),
-    }
-}
-
 // determines which side of a cell was hit by the ray
 #[derive(Debug, Clone, Copy, PartialEq)]
 enum Side { X, Y }
@@ -233,17 +283,6 @@ pub fn render_world_3d(
     map:    &Map,
     texture_minimap: &mut RenderTexture2D,
 ) {
-
-    let mut brick: Texture = [[Color::BLACK; TEX_WIDTH]; TEX_HEIGHT];
-
-    for (y, row) in brick.iter_mut().enumerate() {
-        for (x, cell) in row.iter_mut().enumerate() {
-            let value = y as f32 / TEX_WIDTH as f32;
-            *cell = Color::BLUE.brightness(value);
-        }
-    }
-
-
 
     for x in (0..=SCREEN_WIDTH).step_by(RESOLUTION as usize) {
     //let x = SCREEN_WIDTH / 2; {
@@ -320,17 +359,10 @@ pub fn render_world_3d(
             }
 
             let cell = map.get_cell(mapx as usize, mapy as usize);
-            let color = get_cell_color(cell);
+            if let Some(texture) = cell {
 
-            if let Some(mut color) = color {
-
-                map_square(&mut texture_draw, Vector2::new(mapx as f32, mapy as f32), color.brightness(0.3));
+                //map_square(&mut texture_draw, Vector2::new(mapx as f32, mapy as f32), color.brightness(0.3));
                 drop(texture_draw);
-
-                // make x-side slighty darker
-                if let Side::X = side {
-                    color = color.brightness(0.1);
-                }
 
 
                 // substract delta_dist once, because the dda algorithm went one cell too far
@@ -359,13 +391,15 @@ pub fn render_world_3d(
 
                 for y in start..start+line_height {
 
-                    let c = brick[tex_y as usize][tex_x as usize];
-                    draw.draw_rectangle(x, y, RESOLUTION, 1, c);
+                    let mut color = texture[tex_y as usize][tex_x as usize];
 
+                    if side == Side::Y {
+                        color = color.brightness(-0.3);
+                    }
+
+                    draw.draw_rectangle(x, y, RESOLUTION, 1, color);
                     tex_y += step;
                 }
-
-                //draw.draw_rectangle(x, start, RESOLUTION, line_height, color);
 
                 break;
             }
