@@ -9,7 +9,7 @@ use crate::{SCREEN_WIDTH, SCREEN_HEIGHT, TextureDrawHandle};
 
 
 // Texture dimensions
-const TEX_WIDTH: usize = 100;
+const TEX_WIDTH: usize = 50;
 const TEX_HEIGHT: usize = TEX_WIDTH;
 type Texture = Rc<[[Color; TEX_WIDTH]; TEX_HEIGHT]>;
 
