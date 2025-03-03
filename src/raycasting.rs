@@ -9,7 +9,7 @@ use crate::{SCREEN_WIDTH, SCREEN_HEIGHT, TextureDrawHandle};
 
 
 // Texture dimensions
-const TEX_WIDTH: usize = 50;
+const TEX_WIDTH: usize = 100;
 const TEX_HEIGHT: usize = TEX_WIDTH;
 type Texture = Rc<[[Color; TEX_WIDTH]; TEX_HEIGHT]>;
 
@@ -455,6 +455,7 @@ fn dda(
             break;
         }
 
+        // Ray collision with wall
         let cell = map.get_cell(mapx as usize, mapy as usize);
         if let Some(texture) = cell {
 

@@ -15,6 +15,8 @@ use raycasting::{
 const SCREEN_WIDTH:  i32 = 1920;
 const SCREEN_HEIGHT: i32 = 1080;
 
+//const SCREEN_WIDTH:  i32 = 640;
+//const SCREEN_HEIGHT: i32 = 480;
 
 type TextureDrawHandle<'a> = RaylibTextureMode<'a, RaylibDrawHandle<'a>>;
 
