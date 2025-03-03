@@ -38,6 +38,7 @@ impl Map {
         let i = Some(Self::texture_stripes());
         let u = Some(Self::texture_stripes_h());
         let o = Some(Self::texture_outline());
+        let a = Some(Self::texture_a());
         let n = None;
 
         Self([
@@ -45,14 +46,14 @@ impl Map {
             [ o.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), o.clone() ],
             [ o.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), o.clone() ],
             [ o.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), o.clone() ],
-            [ o.clone(), n.clone(), i.clone(), n.clone(), g.clone(), n.clone(), o.clone(), n.clone(), n.clone(), o.clone() ],
+            [ o.clone(), n.clone(), i.clone(), n.clone(), g.clone(), n.clone(), o.clone(), n.clone(), a.clone(), o.clone() ],
             [ o.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), o.clone() ],
             [ o.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), o.clone() ],
             [ o.clone(), n.clone(), u.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), o.clone() ],
             [ o.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), o.clone() ],
+            [ o.clone(), n.clone(), a.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), o.clone() ],
             [ o.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), o.clone() ],
-            [ o.clone(), n.clone(), g.clone(), g.clone(), g.clone(), g.clone(), g.clone(), g.clone(), n.clone(), o.clone() ],
-            [ o.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), o.clone() ],
+            [ o.clone(), n.clone(), g.clone(), g.clone(), g.clone(), g.clone(), n.clone(), o.clone(), n.clone(), o.clone() ],
             [ o.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), o.clone() ],
             [ o.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), o.clone() ],
             [ o.clone(), o.clone(), o.clone(), o.clone(), o.clone(), o.clone(), o.clone(), o.clone(), o.clone(), o.clone() ],
@@ -99,6 +100,20 @@ impl Map {
             for cell in row.iter_mut() {
                 *cell = if y % 2 == 0 { color_a } else { color_b };
             }
+        }
+
+        tex
+    }
+
+    fn texture_a() -> Texture {
+
+        let mut tex = Box::new([[Color::BLACK; TEX_WIDTH]; TEX_HEIGHT]);
+        let color_left = Color::RED;
+        let color_right = Color::BLUE;
+
+        for row in tex.iter_mut() {
+            row[0] = color_left;
+            row[row.len() - 1] = color_right;
         }
 
         tex
@@ -298,9 +313,6 @@ impl Player {
 enum Side { X, Y }
 
 
-fn raycasting_init() {
-}
-
 
 // TODO: render output into buffer, so texture draw handle doesnt have to be
 // created and destroyed every frame
@@ -388,7 +400,7 @@ pub fn cast_rays(
             let cell = map.get_cell(mapx as usize, mapy as usize);
             if let Some(texture) = cell {
 
-                //map_square(&mut texture_draw, Vector2::new(mapx as f32, mapy as f32), color.brightness(0.3));
+                //map_square(&mut texture_draw, Vector2::new(mapx as f32, mapy as f32), Color::RED.brightness(0.3));
                 //drop(texture_draw);
 
                 // substract delta_dist once, because the dda algorithm went one cell too far
@@ -431,6 +443,15 @@ fn render_texture(
     wallx -= wallx.floor(); // 0.0 <-> 1.0
 
     let tex_x = wallx * TEX_WIDTH as f32;
+
+    // TODO: find out what this stuff does
+    //// correction for negative rays
+    //// textures must be flipped
+    //if side == Side::X && ray_dir.x > 0.0
+    //|| side == Side::Y && ray_dir.y < 0.0 {
+    //    tex_x = TEX_WIDTH as f32 - tex_x - 1.0;
+    //}
+
     let step = TEX_HEIGHT as f32 / line_height as f32;
     let mut tex_y = 0.0;
 
@@ -445,4 +466,5 @@ fn render_texture(
         draw.draw_rectangle(x, y, 1, 1, color);
         tex_y += step;
     }
+
 }

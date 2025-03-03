@@ -46,7 +46,7 @@ impl Application {
         Self {
             player: Player::new(),
             map: Map::new(),
-            show_minimap: true
+            show_minimap: false
         }
     }
 
