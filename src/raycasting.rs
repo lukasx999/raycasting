@@ -313,110 +313,59 @@ impl Player {
 enum Side { X, Y }
 
 
-
-// TODO: render output into buffer, so texture draw handle doesnt have to be
-// created and destroyed every frame
-
-pub fn cast_rays(
-    draw:   &mut RaylibDrawHandle,
-    thread: &RaylibThread,
-    player: &Player,
-    map:    &Map,
-    texture_minimap: &mut RenderTexture2D,
+fn raycasting_init(x: i32, player: &Player) -> (
+    Vector2,
+    Vector2,
+    Vector2,
+    Vector2,
+    isize,
+    isize
 ) {
 
-    for x in 0..=SCREEN_WIDTH {
+    let pos = player.position;
 
-        let pos = player.position;
+    /* -1.0 <-> 0.0 <-> 1.0 */
+    let camera_x = 2.0 * x as f32 / SCREEN_WIDTH as f32 - 1.0;
 
-        /* -1.0 <-> 0.0 <-> 1.0 */
-        let camera_x = 2.0 * x as f32 / SCREEN_WIDTH as f32 - 1.0;
+    let ray_dir = player.direction + player.plane * camera_x;
 
-        let ray_dir = player.direction + player.plane * camera_x;
+    // the length of a step needed to get to the x/y edge of the next cell
+    let delta_dist = Vector2::new(
+        ray_dir.x.recip().abs(),
+        ray_dir.y.recip().abs(),
+    );
 
-        // the length of a step needed to get to the x/y edge of the next cell
-        let delta_dist = Vector2::new(
-            ray_dir.x.recip().abs(),
-            ray_dir.y.recip().abs(),
-        );
+    // the current cell of the map
+    // floating point value gets removed from player position
+    // has to be isize, because we later cast step to usize,
+    // and things will be messed up if step is negative
+    let (mapx, mapy) = (pos.x as isize, pos.y as isize);
 
-        // the current cell of the map
-        // floating point value gets removed from player position
-        // has to be isize, because we later cast step to usize,
-        // and things will be messed up if step is negative
-        let (mut mapx, mut mapy) = (pos.x as isize, pos.y as isize);
+    // step for incrementing map_x/y
+    let mut step = Vector2::zero();
 
-        // step for incrementing map_x/y
-        let mut step = Vector2::zero();
-
-        // initial distance from player position to end of first cell
-        // will get incremented by delta_dist
-        let mut side_dist = Vector2::zero();
+    // initial distance from player position to end of first cell
+    // will get incremented by delta_dist
+    let mut side_dist = Vector2::zero();
 
 
-        if ray_dir.x < 0.0 {
-            step.x = -1.0;
-            side_dist.x = (pos.x - mapx as f32) * delta_dist.x;
-        } else {
-            step.x = 1.0;
-            side_dist.x = (mapx as f32 + 1.0 - pos.x) * delta_dist.x;
-        }
-
-        if ray_dir.y < 0.0 {
-            step.y = -1.0;
-            side_dist.y = (pos.y - mapy as f32) * delta_dist.y;
-        } else {
-            step.y = 1.0;
-            side_dist.y = (mapy as f32 + 1.0 - pos.y) * delta_dist.y;
-        }
-
-
-
-        // DDA
-        loop {
-            let side: Side;
-
-            //let mut texture_draw = draw.begin_texture_mode(&thread, texture_minimap);
-            //let color_ray = Color::from_hex("4a4949").unwrap();
-
-            if side_dist.x < side_dist.y {
-                //map_connect_points(&mut texture_draw, pos, pos + ray_dir * side_dist.x, color_ray);
-                side_dist.x += delta_dist.x;
-                mapx += step.x as isize;
-                side = Side::X;
-
-            } else {
-                //map_connect_points(&mut texture_draw, pos, pos + ray_dir * side_dist.y, color_ray);
-                side_dist.y += delta_dist.y;
-                mapy += step.y as isize;
-                side = Side::Y;
-            }
-
-            // out of bounds check (no wall in sight)
-            if mapx as usize >= MAP_WIDTH || mapy as usize >= MAP_HEIGHT {
-                break;
-            }
-
-            let cell = map.get_cell(mapx as usize, mapy as usize);
-            if let Some(texture) = cell {
-
-                //map_square(&mut texture_draw, Vector2::new(mapx as f32, mapy as f32), Color::RED.brightness(0.3));
-                //drop(texture_draw);
-
-                // substract delta_dist once, because the dda algorithm went one cell too far
-                let perp_wall_dist = match side {
-                    Side::X => side_dist.x - delta_dist.x,
-                    Side::Y => side_dist.y - delta_dist.y,
-                };
-
-                render_texture(draw, x, &texture, pos, side, ray_dir, perp_wall_dist);
-                break;
-            }
-
-        }
-
-
+    if ray_dir.x < 0.0 {
+        step.x = -1.0;
+        side_dist.x = (pos.x - mapx as f32) * delta_dist.x;
+    } else {
+        step.x = 1.0;
+        side_dist.x = (mapx as f32 + 1.0 - pos.x) * delta_dist.x;
     }
+
+    if ray_dir.y < 0.0 {
+        step.y = -1.0;
+        side_dist.y = (pos.y - mapy as f32) * delta_dist.y;
+    } else {
+        step.y = 1.0;
+        side_dist.y = (mapy as f32 + 1.0 - pos.y) * delta_dist.y;
+    }
+
+    (ray_dir, side_dist, delta_dist, step, mapx, mapy)
 
 }
 
@@ -465,6 +414,94 @@ fn render_texture(
 
         draw.draw_rectangle(x, y, 1, 1, color);
         tex_y += step;
+    }
+
+}
+
+fn dda(
+    draw:           &mut RaylibDrawHandle,
+    x:              i32,
+    map:            &Map,
+    pos:            Vector2,
+    mut side_dist:  Vector2,
+    delta_dist:     Vector2,
+    step:           Vector2,
+    ray_dir:        Vector2,
+    mut mapx:       isize,
+    mut mapy:       isize
+) {
+    loop {
+        let side: Side;
+
+        //let mut texture_draw = draw.begin_texture_mode(&thread, texture_minimap);
+        //let color_ray = Color::from_hex("4a4949").unwrap();
+
+        if side_dist.x < side_dist.y {
+            //map_connect_points(&mut texture_draw, pos, pos + ray_dir * side_dist.x, color_ray);
+            side_dist.x += delta_dist.x;
+            mapx += step.x as isize;
+            side = Side::X;
+
+        } else {
+            //map_connect_points(&mut texture_draw, pos, pos + ray_dir * side_dist.y, color_ray);
+            side_dist.y += delta_dist.y;
+            mapy += step.y as isize;
+            side = Side::Y;
+        }
+
+        // out of bounds check (no wall in sight)
+        if mapx as usize >= MAP_WIDTH || mapy as usize >= MAP_HEIGHT {
+            break;
+        }
+
+        let cell = map.get_cell(mapx as usize, mapy as usize);
+        if let Some(texture) = cell {
+
+            //map_square(&mut texture_draw, Vector2::new(mapx as f32, mapy as f32), Color::RED.brightness(0.3));
+            //drop(texture_draw);
+
+            // substract delta_dist once, because the dda algorithm went one cell too far
+            let perp_wall_dist = match side {
+                Side::X => side_dist.x - delta_dist.x,
+                Side::Y => side_dist.y - delta_dist.y,
+            };
+
+            render_texture(draw, x, &texture, pos, side, ray_dir, perp_wall_dist);
+            break;
+        }
+
+    }
+}
+
+
+// TODO: render output into buffer, so texture draw handle doesnt have to be
+// created and destroyed every frame
+
+pub fn cast_rays(
+    draw:   &mut RaylibDrawHandle,
+    thread: &RaylibThread,
+    player: &Player,
+    map:    &Map,
+    texture_minimap: &mut RenderTexture2D,
+) {
+
+    for x in 0..=SCREEN_WIDTH {
+
+        let (ray_dir, side_dist, delta_dist, step, mapx, mapy) = raycasting_init(x, player);
+
+        dda(
+            draw,
+            x,
+            map,
+            player.position,
+            side_dist,
+            delta_dist,
+            step,
+            ray_dir,
+            mapx,
+            mapy
+        );
+
     }
 
 }
