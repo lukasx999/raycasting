@@ -419,18 +419,20 @@ fn render_texture(
 }
 
 fn dda(
-    draw:           &mut RaylibDrawHandle,
-    x:              i32,
-    map:            &Map,
-    pos:            Vector2,
-    mut side_dist:  Vector2,
-    delta_dist:     Vector2,
-    step:           Vector2,
-    ray_dir:        Vector2,
-    mut mapx:       isize,
-    mut mapy:       isize
+    draw:          &mut RaylibDrawHandle,
+    x:             i32,
+    map:           &Map,
+    pos:           Vector2,
+    mut side_dist: Vector2,
+    delta_dist:    Vector2,
+    step:          Vector2,
+    ray_dir:       Vector2,
+    mut mapx:      isize,
+    mut mapy:      isize
 ) {
+
     loop {
+
         let side: Side;
 
         //let mut texture_draw = draw.begin_texture_mode(&thread, texture_minimap);
@@ -487,8 +489,10 @@ pub fn cast_rays(
 
     for x in 0..=SCREEN_WIDTH {
 
+        // Prepare values for DDA algorithm
         let (ray_dir, side_dist, delta_dist, step, mapx, mapy) = raycasting_init(x, player);
 
+        // Calculate ray length and render textures
         dda(
             draw,
             x,
