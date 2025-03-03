@@ -5,7 +5,7 @@ use crate::{SCREEN_WIDTH, SCREEN_HEIGHT, TextureDrawHandle};
 // https://lodev.org/cgtutor/raycasting.html
 
 // Texture dimensions
-const TEX_WIDTH: usize = 50;
+const TEX_WIDTH: usize = 5;
 const TEX_HEIGHT: usize = TEX_WIDTH;
 type Texture = Box<[[Color; TEX_WIDTH]; TEX_HEIGHT]>;
 
@@ -33,8 +33,8 @@ pub struct Map([[CellType; MAP_WIDTH]; MAP_HEIGHT]);
 impl Map {
 
     pub fn new() -> Self {
-        let g = Some(Self::texture_gradient());
         let r = Some(Self::texture_red());
+        let g = Some(Self::texture_gradient());
         let i = Some(Self::texture_stripes());
         let u = Some(Self::texture_stripes_h());
         let o = Some(Self::texture_outline());
@@ -57,6 +57,8 @@ impl Map {
             [ o.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), n.clone(), o.clone() ],
             [ o.clone(), o.clone(), o.clone(), o.clone(), o.clone(), o.clone(), o.clone(), o.clone(), o.clone(), o.clone() ],
         ])
+
+
     }
 
     fn texture_gradient() -> Texture {
@@ -311,9 +313,7 @@ pub fn cast_rays(
     texture_minimap: &mut RenderTexture2D,
 ) {
 
-    //for x in (0..=SCREEN_WIDTH).step_by(RESOLUTION as usize) {
     for x in 0..=SCREEN_WIDTH {
-    //let x = SCREEN_WIDTH / 2; {
 
         let pos = player.position;
 
@@ -362,7 +362,6 @@ pub fn cast_rays(
 
         // DDA
         loop {
-
             let side: Side;
 
             //let mut texture_draw = draw.begin_texture_mode(&thread, texture_minimap);
@@ -443,7 +442,6 @@ fn render_texture(
             color = color.brightness(-0.3);
         }
 
-        //draw.draw_rectangle(x, y, RESOLUTION, 1, color);
         draw.draw_rectangle(x, y, 1, 1, color);
         tex_y += step;
     }
