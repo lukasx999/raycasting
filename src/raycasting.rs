@@ -1,17 +1,21 @@
+use std::rc::Rc;
+
 use raylib::prelude::*;
 
 use crate::{SCREEN_WIDTH, SCREEN_HEIGHT, TextureDrawHandle};
 
 // https://lodev.org/cgtutor/raycasting.html
 
+
+
 // Texture dimensions
-const TEX_WIDTH: usize = 5;
+const TEX_WIDTH: usize = 50;
 const TEX_HEIGHT: usize = TEX_WIDTH;
-type Texture = Box<[[Color; TEX_WIDTH]; TEX_HEIGHT]>;
+type Texture = Rc<[[Color; TEX_WIDTH]; TEX_HEIGHT]>;
 
 pub const MAP_CELL_SIZE: i32 = 25;
 
-const RESOLUTION: i32 = 100;
+const RESOLUTION: i32 = 1;
 
 //const OFFSET: Vector2 = Vector2::new(
 //    (SCREEN_WIDTH  / 2 - CELL_SIZE * MAP_WIDTH  as i32 / 2) as f32,
@@ -33,7 +37,6 @@ pub struct Map([[CellType; MAP_WIDTH]; MAP_HEIGHT]);
 impl Map {
 
     pub fn new() -> Self {
-        let r = Some(Self::texture_red());
         let g = Some(Self::texture_gradient());
         let i = Some(Self::texture_stripes());
         let u = Some(Self::texture_stripes_h());
@@ -63,7 +66,7 @@ impl Map {
     }
 
     fn texture_gradient() -> Texture {
-        let mut tex = Box::new([[Color::BLACK; TEX_WIDTH]; TEX_HEIGHT]);
+        let mut tex = [[Color::BLACK; TEX_WIDTH]; TEX_HEIGHT];
 
         for (y, row) in tex.iter_mut().enumerate() {
             for cell in row {
@@ -72,12 +75,11 @@ impl Map {
             }
         }
 
-        tex
+        Rc::new(tex)
     }
 
     fn texture_stripes() -> Texture {
-
-        let mut tex = Box::new([[Color::BLACK; TEX_WIDTH]; TEX_HEIGHT]);
+        let mut tex = [[Color::BLACK; TEX_WIDTH]; TEX_HEIGHT];
         let color_a = Color::from_hex("21c4ab").unwrap();
         let color_b = Color::from_hex("2168c4").unwrap();
 
@@ -87,12 +89,12 @@ impl Map {
             }
         }
 
-        tex
+        Rc::new(tex)
     }
 
     fn texture_stripes_h() -> Texture {
 
-        let mut tex = Box::new([[Color::BLACK; TEX_WIDTH]; TEX_HEIGHT]);
+        let mut tex = [[Color::BLACK; TEX_WIDTH]; TEX_HEIGHT];
         let color_a = Color::from_hex("e2b81f").unwrap();
         let color_b = Color::from_hex("b0bac4").unwrap();
 
@@ -102,12 +104,12 @@ impl Map {
             }
         }
 
-        tex
+        Rc::new(tex)
     }
 
     fn texture_a() -> Texture {
 
-        let mut tex = Box::new([[Color::BLACK; TEX_WIDTH]; TEX_HEIGHT]);
+        let mut tex = [[Color::BLACK; TEX_WIDTH]; TEX_HEIGHT];
         let color_left = Color::RED;
         let color_right = Color::BLUE;
 
@@ -116,12 +118,12 @@ impl Map {
             row[row.len() - 1] = color_right;
         }
 
-        tex
+        Rc::new(tex)
     }
 
     fn texture_outline() -> Texture {
 
-        let mut tex = Box::new([[Color::BLACK; TEX_WIDTH]; TEX_HEIGHT]);
+        let mut tex = [[Color::BLACK; TEX_WIDTH]; TEX_HEIGHT];
         let color_a = Color::from_hex("6c1efc").unwrap();
         let color_b = Color::RED;
 
@@ -145,11 +147,7 @@ impl Map {
 
         }
 
-        tex
-    }
-
-    fn texture_red() -> Texture {
-        Box::new([[Color::RED; TEX_WIDTH]; TEX_HEIGHT])
+        Rc::new(tex)
     }
 
     pub fn get_cell(&self, x: usize, y: usize) -> &CellType {
@@ -404,7 +402,7 @@ fn render_texture(
     let step = TEX_HEIGHT as f32 / line_height as f32;
     let mut tex_y = 0.0;
 
-    for y in start..start+line_height {
+    for y in (start..start+line_height).step_by(RESOLUTION as usize) {
 
         let mut color = texture[tex_y as usize][tex_x as usize];
 
@@ -412,7 +410,8 @@ fn render_texture(
             color = color.brightness(-0.3);
         }
 
-        draw.draw_rectangle(x, y, 1, 1, color);
+        //draw.draw_rectangle(x, y, 1, 1, color);
+        draw.draw_rectangle(x, y, RESOLUTION, RESOLUTION, color);
         tex_y += step;
     }
 
@@ -473,21 +472,18 @@ fn dda(
         }
 
     }
+
 }
-
-
-// TODO: render output into buffer, so texture draw handle doesnt have to be
-// created and destroyed every frame
 
 pub fn cast_rays(
     draw:   &mut RaylibDrawHandle,
-    thread: &RaylibThread,
+    _thread: &RaylibThread,
     player: &Player,
     map:    &Map,
-    texture_minimap: &mut RenderTexture2D,
+    _texture_minimap: &mut RenderTexture2D,
 ) {
 
-    for x in 0..=SCREEN_WIDTH {
+    for x in (0..=SCREEN_WIDTH).step_by(RESOLUTION as usize) {
 
         // Prepare values for DDA algorithm
         let (ray_dir, side_dist, delta_dist, step, mapx, mapy) = raycasting_init(x, player);
