@@ -7,7 +7,7 @@ mod player;
 use player::{Player, Direction};
 
 mod raycasting;
-use raycasting::{cast_rays, OFFSET};
+use raycasting::{Raycaster, OFFSET};
 
 const SCREEN_WIDTH:  i32 = 1600;
 const SCREEN_HEIGHT: i32 = 900;
@@ -51,8 +51,9 @@ type TextureDrawHandle<'a> = RaylibTextureMode<'a, RaylibDrawHandle<'a>>;
 
 
 struct Application {
-    player: Player,
-    map: Map,
+    raycaster:    Raycaster,
+    player:       Player,
+    map:          Map,
     show_minimap: bool,
 }
 
@@ -60,6 +61,7 @@ impl Application {
 
     pub fn new() -> Self {
         Self {
+            raycaster: Raycaster::new(),
             player: Player::new(),
             map: Map::new(),
             show_minimap: false
@@ -73,7 +75,7 @@ impl Application {
         texture_minimap: &mut RenderTexture2D
     ) {
 
-        let Self { player, map, show_minimap } = self;
+        let Self { raycaster, player, map, show_minimap } = self;
 
         draw.clear_background(Color::from_hex("1f1f1f").unwrap());
 
@@ -82,7 +84,7 @@ impl Application {
             map.render(&mut texture_draw);
         }
 
-        cast_rays(draw, thread, player, map, texture_minimap);
+        raycaster.cast_rays(draw, player, map);
 
         // Draw the players FOV above the rays from render_world_3d()
         {
