@@ -5,20 +5,17 @@ use raylib::prelude::*;
 use crate::TextureDrawHandle;
 
 
-// Texture dimensions
+pub type Texture = Rc<[[Color; TEX_WIDTH]; TEX_HEIGHT]>;
 pub const TEX_WIDTH: usize = 50;
 pub const TEX_HEIGHT: usize = TEX_WIDTH;
-pub type Texture = Rc<[[Color; TEX_WIDTH]; TEX_HEIGHT]>;
 
-pub const MAP_CELL_SIZE: i32 = 25;
 
 type CellType = Option<Texture>;
 pub const MAP_WIDTH:  usize = 10;
 pub const MAP_HEIGHT: usize = 15;
+pub const MAP_CELL_SIZE: i32 = 25;
 
 pub struct Map([[CellType; MAP_WIDTH]; MAP_HEIGHT]);
-
-// TODO: load map from file
 
 impl Map {
 
@@ -141,7 +138,7 @@ impl Map {
     }
 
     pub fn render(&self, draw: &mut TextureDrawHandle) {
-         let color_cell_bg = Color::from_hex("2e2e2e").unwrap();
+        let color_cell_bg = Color::from_hex("2e2e2e").unwrap();
 
         for (y, row) in self.0.iter().enumerate() {
             for (x, cell) in row.iter().enumerate() {

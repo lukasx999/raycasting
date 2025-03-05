@@ -1,10 +1,15 @@
-use std::rc::Rc;
-
 use raylib::prelude::*;
 
-use crate::{SCREEN_WIDTH, SCREEN_HEIGHT, TextureDrawHandle};
-use crate::{Player, Map, MAP_HEIGHT, MAP_WIDTH};
-use crate::map::{TEX_WIDTH, TEX_HEIGHT, Texture};
+use crate::{SCREEN_WIDTH, SCREEN_HEIGHT};
+use crate::player::Player;
+use crate::map::{
+    Map,
+    MAP_WIDTH,
+    MAP_HEIGHT,
+    TEX_WIDTH,
+    TEX_HEIGHT,
+    Texture
+};
 
 // https://lodev.org/cgtutor/raycasting.html
 
