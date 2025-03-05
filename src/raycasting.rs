@@ -186,14 +186,14 @@ fn dda(
 // TODO: thread pool
 
 pub fn cast_rays(
-    draw:   &mut RaylibDrawHandle,
-    _thread: &RaylibThread,
-    player: &Player,
-    map:    &Map,
+    draw:             &mut RaylibDrawHandle,
+    _thread:          &RaylibThread,
+    player:           &Player,
+    map:              &Map,
     _texture_minimap: &mut RenderTexture2D,
 ) {
 
-    for x in 0..=SCREEN_WIDTH {
+    for x in 0..SCREEN_WIDTH {
 
         // Prepare values for DDA algorithm
         let (ray_dir, side_dist, delta_dist, step, mapx, mapy) = raycasting_init(x, player);
