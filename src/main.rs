@@ -1,15 +1,14 @@
 use raylib::prelude::*;
 
+mod map;
+use map::{Map, MAP_CELL_SIZE, MAP_WIDTH, MAP_HEIGHT};
+
 mod player;
 use player::{Player, Direction};
 
 mod raycasting;
 use raycasting::{
-    Map,
     cast_rays,
-    MAP_WIDTH,
-    MAP_HEIGHT,
-    MAP_CELL_SIZE,
     OFFSET,
 };
 
