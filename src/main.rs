@@ -21,20 +21,6 @@ const SCREEN_HEIGHT: i32 = 1080;
 type TextureDrawHandle<'a> = RaylibTextureMode<'a, RaylibDrawHandle<'a>>;
 
 
-fn init_raylib() -> (RaylibHandle, RaylibThread) {
-
-    let (mut rl, thread) = raylib::init()
-        .size(SCREEN_WIDTH, SCREEN_HEIGHT)
-        .log_level(TraceLogLevel::LOG_ERROR)
-        .title("Raycasting")
-        .build();
-
-    rl.set_target_fps(60);
-    rl.disable_cursor();
-
-    (rl, thread)
-}
-
 
 struct Application {
     player: Player,
@@ -143,7 +129,16 @@ impl Application {
 fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut app = Application::new();
-    let (mut rl, thread) = init_raylib();
+
+    let (mut rl, thread) = raylib::init()
+        .size(SCREEN_WIDTH, SCREEN_HEIGHT)
+        .log_level(TraceLogLevel::LOG_ERROR)
+        .title("Raycasting")
+        .build();
+
+    rl.set_target_fps(60);
+    rl.disable_cursor();
+
 
     let mut texture_minimap = rl.load_render_texture(
         &thread,
