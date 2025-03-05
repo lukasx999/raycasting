@@ -189,36 +189,6 @@ impl Map {
 }
 
 
-// Helper functions
-
-fn map_connect_points(d: &mut impl RaylibDraw, p1: Vector2, p2: Vector2, color: Color) {
-    let size = 3.0;
-    d.draw_line_ex(
-        p1 * MAP_CELL_SIZE as f32,
-        p2 * MAP_CELL_SIZE as f32,
-        size,
-        color
-    );
-}
-
-fn map_point(d: &mut TextureDrawHandle, center: Vector2, size: f32, color: Color) {
-    d.draw_circle_v(
-        center * MAP_CELL_SIZE as f32,
-        size,
-        color
-    );
-}
-
-fn map_square(d: &mut TextureDrawHandle, pos: Vector2, color: Color) {
-    d.draw_rectangle_v(
-        pos * MAP_CELL_SIZE as f32,
-        Vector2::new(MAP_CELL_SIZE as f32, MAP_CELL_SIZE as f32),
-        color
-    );
-}
-
-
-
 
 // determines which side of a cell was hit by the ray
 #[derive(Debug, Clone, Copy, PartialEq)]
