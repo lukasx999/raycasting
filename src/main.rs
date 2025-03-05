@@ -7,16 +7,44 @@ mod player;
 use player::{Player, Direction};
 
 mod raycasting;
-use raycasting::{
-    cast_rays,
-    OFFSET,
-};
+use raycasting::{cast_rays, OFFSET};
 
-const SCREEN_WIDTH:  i32 = 1920;
-const SCREEN_HEIGHT: i32 = 1080;
+const SCREEN_WIDTH:  i32 = 1600;
+const SCREEN_HEIGHT: i32 = 900;
 
 //const SCREEN_WIDTH:  i32 = 640;
 //const SCREEN_HEIGHT: i32 = 480;
+
+
+#[derive(Debug, Clone)]
+struct Framebuffer(Box<[[Color; SCREEN_WIDTH as usize]; SCREEN_HEIGHT as usize]>);
+
+impl Framebuffer {
+
+    pub fn new(color: Color) -> Self {
+        Self(Box::new(
+            [[color; SCREEN_WIDTH as usize]; SCREEN_HEIGHT as usize]
+        ))
+    }
+
+    pub fn clear(&mut self, color: Color) {
+        for row in self.0.iter_mut() {
+            for c in row {
+                *c = color;
+            }
+        }
+    }
+
+    pub fn render(&self, draw: &mut impl RaylibDraw) {
+        for (y, row) in self.0.iter().enumerate() {
+            for (x, color) in row.iter().enumerate() {
+                draw.draw_rectangle(x as i32, y as i32, 1, 1, color);
+            }
+        }
+    }
+}
+
+
 
 type TextureDrawHandle<'a> = RaylibTextureMode<'a, RaylibDrawHandle<'a>>;
 

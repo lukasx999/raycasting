@@ -13,25 +13,11 @@ use crate::map::{
 
 // https://lodev.org/cgtutor/raycasting.html
 
-
-
-
-const RESOLUTION: i32 = 1;
-
-//const OFFSET: Vector2 = Vector2::new(
-//    (SCREEN_WIDTH  / 2 - CELL_SIZE * MAP_WIDTH  as i32 / 2) as f32,
-//    (SCREEN_HEIGHT / 2 - CELL_SIZE * MAP_HEIGHT as i32 / 2) as f32
-//);
-
 pub const OFFSET: Vector2 = Vector2::new(10.0, 40.0);
-
-
-
 
 // determines which side of a cell was hit by the ray
 #[derive(Debug, Clone, Copy, PartialEq)]
 enum Side { X, Y }
-
 
 fn raycasting_init(x: i32, player: &Player) -> (
     Vector2,
@@ -124,7 +110,7 @@ fn render_texture(
     let step = TEX_HEIGHT as f32 / line_height as f32;
     let mut tex_y = 0.0;
 
-    for y in (start..start+line_height).step_by(RESOLUTION as usize) {
+    for y in start..start+line_height {
 
         let mut color = texture[tex_y as usize][tex_x as usize];
 
@@ -132,8 +118,7 @@ fn render_texture(
             color = color.brightness(-0.3);
         }
 
-        //draw.draw_rectangle(x, y, 1, 1, color);
-        draw.draw_rectangle(x, y, RESOLUTION, RESOLUTION, color);
+        draw.draw_rectangle(x, y, 1, 1, color);
         tex_y += step;
     }
 
@@ -208,7 +193,7 @@ pub fn cast_rays(
     _texture_minimap: &mut RenderTexture2D,
 ) {
 
-    for x in (0..=SCREEN_WIDTH).step_by(RESOLUTION as usize) {
+    for x in 0..=SCREEN_WIDTH {
 
         // Prepare values for DDA algorithm
         let (ray_dir, side_dist, delta_dist, step, mapx, mapy) = raycasting_init(x, player);
