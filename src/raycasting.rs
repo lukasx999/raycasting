@@ -198,6 +198,8 @@ fn dda(
 
 }
 
+// TODO: thread pool
+
 pub fn cast_rays(
     draw:   &mut RaylibDrawHandle,
     _thread: &RaylibThread,
