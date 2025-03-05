@@ -54,7 +54,6 @@ fn raycasting_init(x: i32, player: &Player) -> (
     // will get incremented by delta_dist
     let mut side_dist = Vector2::zero();
 
-
     if ray_dir.x < 0.0 {
         step.x = -1.0;
         side_dist.x = (pos.x - mapx as f32) * delta_dist.x;
