@@ -1,9 +1,10 @@
 use raylib::prelude::*;
 
+mod player;
+use player::{Player, Direction};
+
 mod raycasting;
 use raycasting::{
-    Player,
-    Direction,
     Map,
     cast_rays,
     MAP_WIDTH,
