@@ -1,6 +1,6 @@
 use raylib::prelude::*;
 
-use crate::{SCREEN_WIDTH, SCREEN_HEIGHT};
+use crate::{SCREEN_WIDTH, SCREEN_HEIGHT, Framebuffer, Stripe};
 use crate::player::Player;
 use crate::map::{
     Map,
@@ -90,9 +90,9 @@ impl Raycaster {
 
     }
 
-    fn dda(&mut self, map: &Map, draw: &mut impl RaylibDraw) {
+    fn dda(&mut self, map: &Map, stripe: Stripe) {
 
-        let Self { x, delta_dist, side_dist, ray_dir, mapx, mapy, step, .. } = self;
+        let Self { delta_dist, side_dist, mapx, mapy, step, .. } = self;
 
         loop {
 
@@ -128,14 +128,14 @@ impl Raycaster {
                 //map_square(&mut texture_draw, Vector2::new(mapx as f32, mapy as f32), Color::RED.brightness(0.3));
                 //drop(texture_draw);
 
-                self.render_texture(draw, side, texture);
+                self.render_texture(stripe, side, texture);
                 break;
             }
 
         }
     }
 
-    fn render_texture(&mut self, draw: &mut impl RaylibDraw, side: Side, texture: &Texture) {
+    fn render_texture(&mut self, stripe: Stripe, side: Side, texture: &Texture) {
 
         // substract delta_dist once, because the dda algorithm went one cell too far
         let perp_wall_dist = match side {
@@ -159,6 +159,7 @@ impl Raycaster {
         let step = TEX_HEIGHT as f32 / line_height as f32;
         let mut tex_y = 0.0;
 
+        let mut stripe = stripe.lock().unwrap();
         for y in start..start+line_height {
 
             let mut color = texture[tex_y as usize][tex_x as usize];
@@ -167,22 +168,37 @@ impl Raycaster {
                 color = color.brightness(-0.3);
             }
 
-            draw.draw_rectangle(self.x, y, 1, 1, color);
+            stripe[y as usize] = color;
+            //draw.draw_rectangle(self.x, y, 1, 1, color);
             tex_y += step;
         }
     }
 
-    pub fn cast_rays(&mut self, draw: &mut impl RaylibDraw, player: &Player, map: &Map) {
+    pub fn cast_rays(&mut self, fb: &mut Framebuffer, player: &Player, map: &Map) {
 
-        for x in 0..SCREEN_WIDTH {
+        std::thread::scope(|s| {
+            for x in 0..SCREEN_WIDTH {
+                let stripe = fb.0[x as usize].clone();
 
-            // Prepare values for DDA algorithm
-            self.init(x, player);
+                s.spawn(|| {
+                    &mut self;
 
-            // Calculate ray length and render textures
-            self.dda(map, draw);
+                    // TODO: move this logic to different function
+                    // to avoid having to borrow self mutably
 
-        }
+                    // Prepare values for DDA algorithm
+                    //self.init(x, player);
+
+                    // Calculate ray length and render textures
+                    //self.dda(map, stripe);
+
+                });
+
+
+
+            }
+
+        });
 
     }
 

@@ -1,11 +1,12 @@
 use std::rc::Rc;
+use std::sync::Arc;
 
 use raylib::prelude::*;
 
 use crate::TextureDrawHandle;
 
 
-pub type Texture = Rc<[[Color; TEX_WIDTH]; TEX_HEIGHT]>;
+pub type Texture = Arc<[[Color; TEX_WIDTH]; TEX_HEIGHT]>;
 pub const TEX_WIDTH: usize = 50;
 pub const TEX_HEIGHT: usize = TEX_WIDTH;
 
@@ -58,7 +59,7 @@ impl Map {
             }
         }
 
-        Rc::new(tex)
+        Arc::new(tex)
     }
 
     fn texture_stripes() -> Texture {
@@ -72,7 +73,7 @@ impl Map {
             }
         }
 
-        Rc::new(tex)
+        Arc::new(tex)
     }
 
     fn texture_stripes_h() -> Texture {
@@ -87,7 +88,7 @@ impl Map {
             }
         }
 
-        Rc::new(tex)
+        Arc::new(tex)
     }
 
     fn texture_a() -> Texture {
@@ -101,7 +102,7 @@ impl Map {
             row[row.len() - 1] = color_right;
         }
 
-        Rc::new(tex)
+        Arc::new(tex)
     }
 
     fn texture_outline() -> Texture {
@@ -130,7 +131,7 @@ impl Map {
 
         }
 
-        Rc::new(tex)
+        Arc::new(tex)
     }
 
     pub fn get_cell(&self, x: usize, y: usize) -> &CellType {

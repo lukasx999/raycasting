@@ -1,3 +1,5 @@
+use std::sync::{Arc, Mutex};
+
 use raylib::prelude::*;
 
 mod map;
@@ -16,28 +18,36 @@ const SCREEN_HEIGHT: i32 = 900;
 //const SCREEN_HEIGHT: i32 = 480;
 
 
+type Stripe = Arc<Mutex<[Color; SCREEN_HEIGHT as usize]>>;
+
 #[derive(Debug, Clone)]
-struct Framebuffer(Box<[[Color; SCREEN_WIDTH as usize]; SCREEN_HEIGHT as usize]>);
+struct Framebuffer(Box<[Stripe; SCREEN_WIDTH as usize]>);
 
 impl Framebuffer {
 
     pub fn new(color: Color) -> Self {
-        Self(Box::new(
-            [[color; SCREEN_WIDTH as usize]; SCREEN_HEIGHT as usize]
-        ))
+        use std::array::from_fn as array;
+
+        // using this function, because Arc doesnt implement Copy
+        let fb = array::<_, { SCREEN_WIDTH as usize }, _>(|_|
+            Arc::new(Mutex::new([color; SCREEN_HEIGHT as usize]))
+        );
+
+        Self(Box::new(fb))
+
     }
 
     pub fn clear(&mut self, color: Color) {
-        for row in self.0.iter_mut() {
-            for c in row {
+        for stripe in self.0.iter_mut() {
+            for c in stripe.lock().unwrap().iter_mut() {
                 *c = color;
             }
         }
     }
 
     pub fn render(&self, draw: &mut impl RaylibDraw) {
-        for (y, row) in self.0.iter().enumerate() {
-            for (x, color) in row.iter().enumerate() {
+        for (y, stripe) in self.0.iter().enumerate() {
+            for (x, color) in stripe.lock().unwrap().iter().enumerate() {
                 draw.draw_rectangle(x as i32, y as i32, 1, 1, color);
             }
         }
@@ -70,6 +80,7 @@ impl Application {
 
     pub fn render(
         &mut self,
+        fb:              &mut Framebuffer,
         thread:          &RaylibThread,
         draw:            &mut RaylibDrawHandle,
         texture_minimap: &mut RenderTexture2D
@@ -84,7 +95,8 @@ impl Application {
             map.render(&mut texture_draw);
         }
 
-        raycaster.cast_rays(draw, player, map);
+        raycaster.cast_rays(fb, player, map);
+        fb.clear(Color::BLACK);
 
         // Draw the players FOV above the rays from render_world_3d()
         {
@@ -176,13 +188,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         MAP_HEIGHT as u32 * MAP_CELL_SIZE as u32,
     )?;
 
+    let mut fb = Framebuffer::new(Color::BLACK);
+
     while !rl.window_should_close() {
 
         let key = rl.get_key_pressed(); // cannot be called after begin_drawing()
         let mut draw = rl.begin_drawing(&thread);
 
         app.handle_input(&mut draw, key);
-        app.render(&thread, &mut draw, &mut texture_minimap);
+        app.render(&mut fb, &thread, &mut draw, &mut texture_minimap);
 
     }
 
