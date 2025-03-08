@@ -174,27 +174,25 @@ impl Raycaster {
         }
     }
 
-    pub fn cast_rays(&mut self, fb: &mut Framebuffer, player: &Player, map: &Map) {
+    pub fn render_stripe(x: i32, stripe: Stripe, player: &Player, map: &Map) {
+        let mut s = Self::new();
+
+        // Prepare values for DDA algorithm
+        s.init(x, player);
+
+        // Calculate ray length and render textures
+        s.dda(map, stripe);
+    }
+
+    pub fn cast_rays(fb: &mut Framebuffer, player: &Player, map: &Map) {
 
         std::thread::scope(|s| {
             for x in 0..SCREEN_WIDTH {
                 let stripe = fb.0[x as usize].clone();
 
-                s.spawn(|| {
-                    &mut self;
-
-                    // TODO: move this logic to different function
-                    // to avoid having to borrow self mutably
-
-                    // Prepare values for DDA algorithm
-                    //self.init(x, player);
-
-                    // Calculate ray length and render textures
-                    //self.dda(map, stripe);
-
+                s.spawn(move || {
+                    Self::render_stripe(x, stripe, player, map);
                 });
-
-
 
             }
 

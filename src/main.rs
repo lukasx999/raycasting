@@ -46,8 +46,8 @@ impl Framebuffer {
     }
 
     pub fn render(&self, draw: &mut impl RaylibDraw) {
-        for (y, stripe) in self.0.iter().enumerate() {
-            for (x, color) in stripe.lock().unwrap().iter().enumerate() {
+        for (x, stripe) in self.0.iter().enumerate() {
+            for (y, color) in stripe.lock().unwrap().iter().enumerate() {
                 draw.draw_rectangle(x as i32, y as i32, 1, 1, color);
             }
         }
@@ -95,8 +95,9 @@ impl Application {
             map.render(&mut texture_draw);
         }
 
-        raycaster.cast_rays(fb, player, map);
         fb.clear(Color::BLACK);
+        Raycaster::cast_rays(fb, player, map);
+        fb.render(draw);
 
         // Draw the players FOV above the rays from render_world_3d()
         {
