@@ -1,6 +1,7 @@
 use std::sync::{Arc, Mutex};
 
 use raylib::prelude::*;
+use rayon::{ThreadPoolBuilder, ThreadPool};
 
 mod map;
 use map::{Map, MAP_CELL_SIZE, MAP_WIDTH, MAP_HEIGHT};
@@ -76,8 +77,26 @@ impl Application {
         }
     }
 
+    pub fn render_simple(
+        &mut self,
+        pool: &ThreadPool,
+        fb:   &mut Framebuffer,
+        draw: &mut RaylibDrawHandle,
+    ) {
+
+        draw.clear_background(Color::from_hex("1f1f1f").unwrap());
+
+        //fb.clear(Color::BLACK);
+        cast_rays(pool, fb, &self.player, &self.map);
+        //fb.render(draw);
+
+        draw.draw_fps(10, 10);
+
+    }
+
     pub fn render(
         &mut self,
+        pool:            &ThreadPool,
         fb:              &mut Framebuffer,
         thread:          &RaylibThread,
         draw:            &mut RaylibDrawHandle,
@@ -86,7 +105,7 @@ impl Application {
 
         let Self { player, map, show_minimap } = self;
 
-        draw.clear_background(Color::from_hex("1f1f1f").unwrap());
+        //draw.clear_background(Color::from_hex("1f1f1f").unwrap());
 
         {
             let mut texture_draw = draw.begin_texture_mode(&thread, texture_minimap);
@@ -94,7 +113,7 @@ impl Application {
         }
 
         fb.clear(Color::BLACK);
-        cast_rays(fb, player, map);
+        cast_rays(pool, fb, player, map);
         fb.render(draw);
 
         // Draw the players FOV above the rays from render_world_3d()
@@ -189,13 +208,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut fb = Framebuffer::new(Color::BLACK);
 
+    let pool = ThreadPoolBuilder::new()
+        .num_threads(SCREEN_WIDTH as usize)
+        .build()?;
+
     while !rl.window_should_close() {
 
         let key = rl.get_key_pressed(); // cannot be called after begin_drawing()
         let mut draw = rl.begin_drawing(&thread);
 
         app.handle_input(&mut draw, key);
-        app.render(&mut fb, &thread, &mut draw, &mut texture_minimap);
+        app.render_simple(&pool, &mut fb, &mut draw);
+        //app.render(&pool, &mut fb, &thread, &mut draw, &mut texture_minimap);
 
     }
 

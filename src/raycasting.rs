@@ -1,3 +1,5 @@
+use rayon::ThreadPool;
+
 use raylib::prelude::*;
 
 use crate::{SCREEN_WIDTH, SCREEN_HEIGHT, Framebuffer, Stripe};
@@ -155,12 +157,17 @@ fn render_stripe(stripe: Stripe, x: i32, player: &Player, map: &Map) {
 
 }
 
-pub fn cast_rays(fb: &mut Framebuffer, player: &Player, map: &Map) {
+pub fn cast_rays(pool: &ThreadPool, fb: &mut Framebuffer, player: &Player, map: &Map) {
 
-    std::thread::scope(|s| {
+    pool.scope(|s| {
         for x in 0..SCREEN_WIDTH {
+
             let stripe = fb.0[x as usize].clone();
-            s.spawn(move || render_stripe(stripe, x, player, map));
+
+            s.spawn(move |_| {
+                render_stripe(stripe, x, player, map)
+            });
+
         }
     });
 

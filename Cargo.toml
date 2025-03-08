@@ -3,5 +3,9 @@ name = "raycasting"
 version = "0.1.0"
 edition = "2021"
 
+[profile.release]
+debug = true
+
 [dependencies]
 raylib = "5.0.2"
+rayon = "1.10.0"
