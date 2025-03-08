@@ -20,6 +20,10 @@ pub const OFFSET: Vector2 = Vector2::new(10.0, 40.0);
 enum Side { X, Y }
 
 
+pub fn cast_stripe() {
+    // TODO: this
+}
+
 #[derive(Debug, Clone)]
 pub struct Raycaster {
     x:          i32,
