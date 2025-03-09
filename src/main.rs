@@ -9,10 +9,12 @@ mod player;
 use player::{Player, Direction};
 
 mod raycasting;
-use raycasting::{cast_rays, OFFSET};
+use raycasting::cast_rays;
 
 const SCREEN_WIDTH:  i32 = 1200;
 const SCREEN_HEIGHT: i32 = 700;
+
+pub const OFFSET: Vector2 = Vector2::new(10.0, 40.0);
 
 type TextureDrawHandle<'a> = RaylibTextureMode<'a, RaylibDrawHandle<'a>>;
 

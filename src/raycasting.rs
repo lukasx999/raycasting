@@ -13,7 +13,7 @@ use crate::map::{
 
 // https://lodev.org/cgtutor/raycasting.html
 
-pub const OFFSET: Vector2 = Vector2::new(10.0, 40.0);
+const STEP: i32 = 10;
 
 // determines which side of a cell was hit by the ray
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -155,9 +155,7 @@ fn render_stripe(draw: &mut impl RaylibDraw, x: i32, player: &Player, map: &Map)
 }
 
 pub fn cast_rays(draw: &mut impl RaylibDraw, player: &Player, map: &Map) {
-
     for x in 0..SCREEN_WIDTH {
         render_stripe(draw, x, player, map);
     }
-
 }
