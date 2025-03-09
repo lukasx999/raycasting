@@ -1,7 +1,6 @@
 use std::sync::{Arc, Mutex};
 
 use raylib::prelude::*;
-use rayon::{ThreadPoolBuilder, ThreadPool};
 
 mod map;
 use map::{Map, MAP_CELL_SIZE, MAP_WIDTH, MAP_HEIGHT};
@@ -12,54 +11,10 @@ use player::{Player, Direction};
 mod raycasting;
 use raycasting::{cast_rays, OFFSET};
 
-const SCREEN_WIDTH:  i32 = 1600;
-const SCREEN_HEIGHT: i32 = 900;
-
-//const SCREEN_WIDTH:  i32 = 640;
-//const SCREEN_HEIGHT: i32 = 480;
-
-
-type Stripe = Arc<Mutex<[Color; SCREEN_HEIGHT as usize]>>;
-
-#[derive(Debug, Clone)]
-struct Framebuffer(Box<[Stripe; SCREEN_WIDTH as usize]>);
-
-impl Framebuffer {
-
-    pub fn new(color: Color) -> Self {
-        use std::array::from_fn as array;
-
-        // using this function, because Arc doesnt implement Copy
-        let fb = array::<_, { SCREEN_WIDTH as usize }, _>(|_|
-            Arc::new(Mutex::new([color; SCREEN_HEIGHT as usize]))
-        );
-
-        Self(Box::new(fb))
-
-    }
-
-    pub fn clear(&mut self, color: Color) {
-        for stripe in self.0.iter_mut() {
-            for c in stripe.lock().unwrap().iter_mut() {
-                *c = color;
-            }
-        }
-    }
-
-    pub fn render(&self, draw: &mut impl RaylibDraw) {
-        for (x, stripe) in self.0.iter().enumerate() {
-            for (y, color) in stripe.lock().unwrap().iter().enumerate() {
-                draw.draw_rectangle(x as i32, y as i32, 1, 1, color);
-            }
-        }
-    }
-}
-
-
+const SCREEN_WIDTH:  i32 = 1200;
+const SCREEN_HEIGHT: i32 = 700;
 
 type TextureDrawHandle<'a> = RaylibTextureMode<'a, RaylibDrawHandle<'a>>;
-
-
 
 struct Application {
     player:       Player,
@@ -77,27 +32,8 @@ impl Application {
         }
     }
 
-    pub fn render_simple(
-        &mut self,
-        pool: &ThreadPool,
-        fb:   &mut Framebuffer,
-        draw: &mut RaylibDrawHandle,
-    ) {
-
-        draw.clear_background(Color::from_hex("1f1f1f").unwrap());
-
-        //fb.clear(Color::BLACK);
-        cast_rays(pool, fb, &self.player, &self.map);
-        //fb.render(draw);
-
-        draw.draw_fps(10, 10);
-
-    }
-
     pub fn render(
         &mut self,
-        pool:            &ThreadPool,
-        fb:              &mut Framebuffer,
         thread:          &RaylibThread,
         draw:            &mut RaylibDrawHandle,
         texture_minimap: &mut RenderTexture2D
@@ -105,16 +41,14 @@ impl Application {
 
         let Self { player, map, show_minimap } = self;
 
-        //draw.clear_background(Color::from_hex("1f1f1f").unwrap());
+        draw.clear_background(Color::from_hex("1f1f1f").unwrap());
 
         {
             let mut texture_draw = draw.begin_texture_mode(&thread, texture_minimap);
             map.render(&mut texture_draw);
         }
 
-        fb.clear(Color::BLACK);
-        cast_rays(pool, fb, player, map);
-        fb.render(draw);
+        cast_rays(draw, player, map);
 
         // Draw the players FOV above the rays from render_world_3d()
         {
@@ -197,7 +131,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .build();
 
     rl.set_target_fps(60);
-    rl.disable_cursor();
+    //rl.disable_cursor();
 
 
     let mut texture_minimap = rl.load_render_texture(
@@ -206,20 +140,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         MAP_HEIGHT as u32 * MAP_CELL_SIZE as u32,
     )?;
 
-    let mut fb = Framebuffer::new(Color::BLACK);
-
-    let pool = ThreadPoolBuilder::new()
-        .num_threads(SCREEN_WIDTH as usize)
-        .build()?;
-
     while !rl.window_should_close() {
 
         let key = rl.get_key_pressed(); // cannot be called after begin_drawing()
         let mut draw = rl.begin_drawing(&thread);
 
         app.handle_input(&mut draw, key);
-        app.render_simple(&pool, &mut fb, &mut draw);
-        //app.render(&pool, &mut fb, &thread, &mut draw, &mut texture_minimap);
+        app.render(&thread, &mut draw, &mut texture_minimap);
 
     }
 

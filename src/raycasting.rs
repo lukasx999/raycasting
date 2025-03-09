@@ -1,8 +1,6 @@
-use rayon::ThreadPool;
-
 use raylib::prelude::*;
 
-use crate::{SCREEN_WIDTH, SCREEN_HEIGHT, Framebuffer, Stripe};
+use crate::{SCREEN_WIDTH, SCREEN_HEIGHT};
 use crate::player::Player;
 use crate::map::{
     Map,
@@ -23,7 +21,8 @@ enum Side { X, Y }
 
 
 fn render_texture(
-    stripe:         Stripe,
+    draw:           &mut impl RaylibDraw,
+    x:              i32,
     side:           Side,
     pos:            Vector2,
     ray_dir:        Vector2,
@@ -47,7 +46,6 @@ fn render_texture(
     let step = TEX_HEIGHT as f32 / line_height as f32;
     let mut tex_y = 0.0;
 
-    let mut stripe = stripe.lock().unwrap();
     for y in start..start+line_height {
 
         let mut color = texture[tex_y as usize][tex_x as usize];
@@ -56,14 +54,13 @@ fn render_texture(
             color = color.brightness(-0.3);
         }
 
-        stripe[y as usize] = color;
-        //draw.draw_rectangle(self.x, y, 1, 1, color);
+        draw.draw_rectangle(x, y, 1, 1, color);
         tex_y += step;
     }
 }
 
 
-fn render_stripe(stripe: Stripe, x: i32, player: &Player, map: &Map) {
+fn render_stripe(draw: &mut impl RaylibDraw, x: i32, player: &Player, map: &Map) {
 
     /* INIT */
 
@@ -149,7 +146,7 @@ fn render_stripe(stripe: Stripe, x: i32, player: &Player, map: &Map) {
                 Side::Y => side_dist.y - delta_dist.y,
             };
 
-            render_texture(stripe, side, pos, ray_dir, perp_wall_dist, texture.clone());
+            render_texture(draw, x, side, pos, ray_dir, perp_wall_dist, texture.clone());
             break;
         }
 
@@ -157,18 +154,10 @@ fn render_stripe(stripe: Stripe, x: i32, player: &Player, map: &Map) {
 
 }
 
-pub fn cast_rays(pool: &ThreadPool, fb: &mut Framebuffer, player: &Player, map: &Map) {
+pub fn cast_rays(draw: &mut impl RaylibDraw, player: &Player, map: &Map) {
 
-    pool.scope(|s| {
-        for x in 0..SCREEN_WIDTH {
-
-            let stripe = fb.0[x as usize].clone();
-
-            s.spawn(move |_| {
-                render_stripe(stripe, x, player, map)
-            });
-
-        }
-    });
+    for x in 0..SCREEN_WIDTH {
+        render_stripe(draw, x, player, map);
+    }
 
 }
