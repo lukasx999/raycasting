@@ -7,3 +7,7 @@ An attempt to implement old-school "3D" graphics using raycasting in Rust.
 ## Untextured Raycaster
 
 ![Untextured Raycaster](./assets/untextured.png)
+
+## Textured Raycaster
+
+![Textured Raycaster](./assets/textured.png)
