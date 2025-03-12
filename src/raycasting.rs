@@ -13,7 +13,10 @@ use crate::map::{
 
 // https://lodev.org/cgtutor/raycasting.html
 
+// TODO: make this work
 const PIXEL_SIZE: usize = 1;
+
+// TODO: fix warped textures when block gets greater than screen
 
 // determines which side of a cell was hit by the ray
 #[derive(Debug, Clone, Copy, PartialEq)]
