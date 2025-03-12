@@ -1,4 +1,3 @@
-use std::rc::Rc;
 use std::sync::Arc;
 
 use raylib::prelude::*;
@@ -7,7 +6,7 @@ use crate::TextureDrawHandle;
 
 
 pub type Texture = Arc<[[Color; TEX_WIDTH]; TEX_HEIGHT]>;
-pub const TEX_WIDTH: usize = 50;
+pub const TEX_WIDTH: usize = 5;
 pub const TEX_HEIGHT: usize = TEX_WIDTH;
 
 
@@ -142,7 +141,7 @@ impl Map {
         let color_cell_bg = Color::from_hex("2e2e2e").unwrap();
 
         for (y, row) in self.0.iter().enumerate() {
-            for (x, cell) in row.iter().enumerate() {
+            for (x, _cell) in row.iter().enumerate() {
                 //let color = get_cell_color(*cell).unwrap_or(color_cell_bg);
                 let color = Color::BLUE;
 

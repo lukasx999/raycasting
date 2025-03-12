@@ -1,5 +1,3 @@
-use std::sync::{Arc, Mutex};
-
 use raylib::prelude::*;
 
 mod map;
@@ -11,8 +9,8 @@ use player::{Player, Direction};
 mod raycasting;
 use raycasting::cast_rays;
 
-const SCREEN_WIDTH:  i32 = 1200;
-const SCREEN_HEIGHT: i32 = 700;
+const SCREEN_WIDTH:  i32 = 1600;
+const SCREEN_HEIGHT: i32 = 900;
 
 pub const OFFSET: Vector2 = Vector2::new(10.0, 40.0);
 

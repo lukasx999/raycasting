@@ -24,7 +24,7 @@ fn map_point(d: &mut TextureDrawHandle, center: Vector2, size: f32, color: Color
     );
 }
 
-fn map_square(d: &mut TextureDrawHandle, pos: Vector2, color: Color) {
+fn _map_square(d: &mut TextureDrawHandle, pos: Vector2, color: Color) {
     d.draw_rectangle_v(
         pos * MAP_CELL_SIZE as f32,
         Vector2::new(MAP_CELL_SIZE as f32, MAP_CELL_SIZE as f32),
