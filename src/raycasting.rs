@@ -14,7 +14,7 @@ use crate::map::{
 // https://lodev.org/cgtutor/raycasting.html
 
 // TODO: make this work
-const PIXEL_SIZE: usize = 1;
+const PIXEL_SIZE: usize = 10;
 
 // TODO: fix warped textures when block gets greater than screen
 
@@ -49,7 +49,8 @@ fn render_texture(
     let step = TEX_HEIGHT as f32 / line_height as f32;
     let mut tex_y = 0.0;
 
-    for y in (start..start+line_height).step_by(PIXEL_SIZE) {
+    //for y in (start..start+line_height).step_by(PIXEL_SIZE) {
+    for y in start..start+line_height {
 
         let mut color = texture[tex_y as usize][tex_x as usize];
 
@@ -58,7 +59,7 @@ fn render_texture(
         }
 
         //draw.draw_rectangle(x, y, 1, 1, color);
-        draw.draw_rectangle(x, y, PIXEL_SIZE as i32, PIXEL_SIZE as i32, color);
+        draw.draw_rectangle(x, y, PIXEL_SIZE as i32, 1, color);
         tex_y += step;
     }
 }
